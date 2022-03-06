@@ -21,6 +21,7 @@ base_client.authentificate_with_pat('<personal access token>')
 base_client.authentificate_with_password('username', 'userpassword')
 ```
 3. Get facade your need
+
     3.1 If you want to manage workitems
     ```python
     client = TfsClientFactory.get_workitem_client(base_client)
@@ -29,7 +30,9 @@ base_client.authentificate_with_password('username', 'userpassword')
     ```python
     client = TfsClientFactory.get_project_client(base_client)
     ```
+    
 4. Manage TFS items
+
     4.1 Managing workitems
     ```python
     wi = client.get_single_workitem(10500)
