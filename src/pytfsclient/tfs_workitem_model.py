@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import List, Dict
 from .tfs_workitem_relation_model import TfsWorkitemRelation
+from .tfs_project_model import TeamMember
 
 _IgnoreFields = [
     'System.Id',
@@ -236,6 +237,27 @@ class TfsWorkitem:
             return TfsUpdateRelationsResult.UPDATE_EXCEPTION
 
     ### END RELATION REGION ###
+
+    ### MENTION USER REGION
+
+    def mention_user(self, user: TeamMember, msg: str) -> TfsUpdateFieldsResult:
+        """
+        Sends mention to user. Writes mention to History of workitem
+        WARNING: this function uses non-public API
+
+        :param: user (TeamMember): user to mention.
+        :param: msg (str): mention text. Can\'t be None
+        :return: TfsUpdateFieldsResult - result of mention user
+        """
+        assert user, 'TfsWokitem::mention_user: user can\'t be None'
+        assert msg, 'TfsWokitem::mention_user: mention message can\'t be None'
+
+        mention = '<a href=\"#\" data-vss-mention=\"version:2.0,{}\">@{}</a>: {}'.format(user.id, user.display_name, msg)
+
+        self.__updated_fields['System.History'] = mention
+        return self.update_fields()
+
+    ### END MENTION USER REGION
 
     #@staticmethod
     @classmethod

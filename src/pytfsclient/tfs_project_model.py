@@ -96,7 +96,7 @@ class TeamMember:
     @property
     def display_name(self) -> str:
         """
-        Dispang name of TFS team member
+        Displaing name of TFS team member
         """
         return self.__display_name
     
