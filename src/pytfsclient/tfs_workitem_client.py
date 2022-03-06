@@ -1,10 +1,10 @@
 from typing import List
 from urllib.error import HTTPError
-from lib.http_client import HttpClient
-from lib.tfs_client import API_VERSION, TfsBaseClient, TfsClientError, batch
-from lib.tfs_workitem_model import TfsWorkitem
-from lib.tfs_wiql_model import TfsWiqlResult
-from lib.tfs_workitem_relation_model import TfsWorkitemRelation
+from .http_client import HttpClient
+from .tfs_client import API_VERSION, TfsBaseClient, TfsClientError, batch
+from .tfs_workitem_model import TfsWorkitem
+from .tfs_wiql_model import TfsWiqlResult
+from .tfs_workitem_relation_model import TfsWorkitemRelation
 
 _WORKITEM_URL = 'wit/workitems'
 _WIQL_URL = 'wit/wiql'

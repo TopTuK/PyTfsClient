@@ -1,5 +1,5 @@
 from typing import List
-from lib.tfs_workitem_model import TfsWorkitem
+from .tfs_workitem_model import TfsWorkitem
 
 class TfsWiqlResult:
     """

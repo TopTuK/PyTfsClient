@@ -1,6 +1,6 @@
-from lib.tfs_client import TfsBaseClient
-from lib.tfs_project_client import TfsProjectClient
-from lib.tfs_workitem_client import TfsWorkitemClient
+from .tfs_client import TfsBaseClient
+from .tfs_project_client import TfsProjectClient
+from .tfs_workitem_client import TfsWorkitemClient
 
 class TfsClientFactory:
     """

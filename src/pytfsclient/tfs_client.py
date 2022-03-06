@@ -1,4 +1,4 @@
-from lib.http_client import HttpClient
+from .http_client import HttpClient
 
 API_VERSION = '6.0'
 API_VERSION_PREVIEW = '6.0-preview.3'

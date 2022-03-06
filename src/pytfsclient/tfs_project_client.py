@@ -1,6 +1,6 @@
-from lib.http_client import HttpClient
-from lib.tfs_client import API_VERSION, API_VERSION_PREVIEW, TfsBaseClient, TfsClientError
-from lib.tfs_project_model import TeamMember, TfsProject, TfsTeam
+from .http_client import HttpClient
+from .tfs_client import API_VERSION, API_VERSION_PREVIEW, TfsBaseClient, TfsClientError
+from .tfs_project_model import TeamMember, TfsProject, TfsTeam
 from typing import List
 
 _URL_PROJECTS = 'projects'

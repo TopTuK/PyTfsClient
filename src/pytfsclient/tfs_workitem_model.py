@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Dict
-from lib.tfs_workitem_relation_model import TfsWorkitemRelation
+from .tfs_workitem_relation_model import TfsWorkitemRelation
 
 _IgnoreFields = [
     'System.Id',
