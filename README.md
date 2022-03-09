@@ -26,6 +26,7 @@ base_client.authentificate_with_password('username', 'userpassword')
     ```python
     client = TfsClientFactory.get_workitem_client(base_client)
     ```
+    
     3.2 If you want to manage projects, teams, team members
     ```python
     client = TfsClientFactory.get_project_client(base_client)
