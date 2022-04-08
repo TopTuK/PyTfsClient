@@ -162,12 +162,13 @@ class TfsWorkitemClient:
         except Exception as ex:
             raise TfsClientError('TfsWorkitemClient::create_workitem: EXCEPTION raised. Msg: {}'.format(ex))
     
-    def copy_workitem(self, source_item, item_fields: List[str] = None) -> TfsWorkitem:
+    def copy_workitem(self, source_item, item_fields: List[str] = None, item_ignore_fileds: List[str] = None) -> TfsWorkitem:
         """
         Creates copy of given workitem.
 
         :param: source_item: id OR TfsWorkitem instance of a workitem to copy. Can't be None.
         :param: item_fields: list of fields to copy. if None then all fields except ignorable.
+        :param: item_ignore_fileds: additional list of ignorable fields.
         :return: TfsWorkitem copy of given workitem
         """
         assert source_item, 'TfsWorkitemClient::copy_workitem: source_item can\'t be None'
@@ -210,10 +211,17 @@ class TfsWorkitemClient:
 
             fields = {}
             for fld_name, fld_value in source_item_fields.items():
+                if item_ignore_fileds:
+                    if fld_name in item_ignore_fileds:
+                        continue
+
                 if fld_name in ignore_fields:
                     continue
 
-                fields[fld_name] = item_fields[fld_name] if fld_name in item_fields else fld_value
+                if item_fields:
+                    fields[fld_name] = item_fields[fld_name] if (fld_name in item_fields) else fld_value
+                else:
+                    fields[fld_name] = fld_value
 
             return fields
 
