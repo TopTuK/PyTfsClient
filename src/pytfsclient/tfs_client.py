@@ -28,25 +28,28 @@ class TfsBaseClient:
 
         def get_collection_and_project():
             splitted_project = project_name.split('/')
-            collection = splitted_project[0]
-            project = None
-
             if len(splitted_project) > 1:
+                collection = splitted_project[0]
                 project = splitted_project[1]
-                # If not space
-                if project:
-                    project = project.split('/')[0]
+            else:
+                collection = None
+                project = splitted_project[0]
 
             return collection, project
-        
+
         # Remove part after / in project_name, like DefaultCollection/MyProject => DefaultCollection
         collection, project = get_collection_and_project()
         self.__collection = collection
         self.__project_name = project
 
         # API responce only in Project, without subproject
-        self._url = '{}/_apis'.format(collection)
-        self._url_prj = ('{}/{}/_apis'.format(collection, project)) if project else self.__server_url
+        self._url = '{}/_apis'.format(collection) if collection else '{}_apis'.format(self.__server_url)
+        if collection and project:
+            self._url_prj = '{}/{}/_apis'.format(collection, project)
+        elif project:
+            self._url_prj = '{}/_apis'.format(project)
+        else:
+            self._url_prj = self.__server_url
     
     @property
     def server_url(self) -> str:
@@ -89,7 +92,12 @@ class TfsBaseClient:
         :setter: sets TFS server project name and project api url
         """
         self.__project_name = name
-        self._url_prj = ('{}/{}/_apis'.format(self.collection, name)) if name else self.__url
+        if self.collection and name:
+            self._url_prj = ('{}/{}/_apis'.format(self.collection, name))
+        elif name:
+            self._url_prj = '{}/_apis'.format(name)
+        else:
+            self._url_prj = self.__server_url
     
     @property
     def http_client(self) -> HttpClient:
