@@ -46,7 +46,7 @@ class TfsBaseClient:
 
         # API responce only in Project, without subproject
         self._url = '{}/_apis'.format(collection)
-        self._url_prj = ('{}/{}/_apis'.format(collection, project)) if project else self.__url
+        self._url_prj = ('{}/{}/_apis'.format(collection, project)) if project else self.__server_url
     
     @property
     def server_url(self) -> str:
