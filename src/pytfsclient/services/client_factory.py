@@ -1,5 +1,6 @@
 from pytfsclient.services.client_connection import ClientConnection
 from pytfsclient.services.http.http_client import HttpClient
+from pytfsclient.services.mention_client.mention_client import MentionClient
 from pytfsclient.services.project_client.project_client import ProjectClient
 from pytfsclient.services.workitem_client.workitem_client import WorkitemClient
 
@@ -71,3 +72,11 @@ class ClientFactory:
         assert client_connection, 'Client Connection can\'t be None'
         
         return ProjectClient(client_connection)
+    
+    @staticmethod
+    def get_mention_client() -> MentionClient:
+        """
+        Return TFS MentionClient facade for mention users in workitems.
+        """
+
+        return MentionClient()

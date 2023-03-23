@@ -17,11 +17,13 @@ class BaseClient(ABC):
     
     ### Properties section ###
 
+    @property
     def client_connection(self) -> ClientConnection:
         """
         """
         return self._client_connection
     
+    @property
     def http_client(self) -> HttpClient:
         """
         """
