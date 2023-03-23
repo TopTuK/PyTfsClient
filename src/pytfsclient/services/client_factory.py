@@ -4,7 +4,6 @@ from pytfsclient.services.mention_client.mention_client import MentionClient
 from pytfsclient.services.project_client.project_client import ProjectClient
 from pytfsclient.services.workitem_client.workitem_client import WorkitemClient
 
-
 class ClientFactory:
     """
     Static ClientFactory class with static functions helps to create TFS clients for different purposes.
