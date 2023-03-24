@@ -1,7 +1,8 @@
 from pytfsclient.services.http.http_client import HttpClient
 
 class ClientConnection:
-    """"""
+    """
+    """
     
     # Constructor
     def __init__(self, http_client: HttpClient, project_name: str='DefaultCollection') -> None:
