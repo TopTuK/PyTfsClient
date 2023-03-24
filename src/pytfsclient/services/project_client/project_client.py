@@ -167,3 +167,15 @@ class ProjectClient(BaseClient):
             return members
         except Exception as ex:
             raise ClientError(f'ProjectClient::get_project_team_members: exception raised. Msg: {ex}', ex)
+
+    # https://docs.microsoft.com/en-us/rest/api/azure/devops/core/teams/get-teams?view=azure-devops-rest-6.0
+    def get_project_teams(self, project: TfsProject, expand: bool = False, current_user: bool = False, skip: int = 0) -> List[TfsTeam]:
+        """
+        """
+        pass
+
+    # https://docs.microsoft.com/en-us/rest/api/azure/devops/core/teams/get-team-members-with-extended-properties?view=azure-devops-rest-6.0
+    def get_project_team_members(self, project: TfsProject, team: TfsTeam) -> List[TfsTeamMemeber]:
+        """
+        """
+        pass
