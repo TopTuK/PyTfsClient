@@ -1,4 +1,4 @@
-class TfsTeamMemeber:
+class TfsTeamMember:
     """
     TFS Team Member model class
     """
