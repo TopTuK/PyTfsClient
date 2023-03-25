@@ -220,7 +220,7 @@ class ProjectClient(BaseClient):
         assert project, 'ProjectClient::get_project_team_members: project can\'t be None'
         assert team, 'ProjectClient::get_project_team_members: team can\'t be None'
 
-        request_url = f'{self.client_connection.api_url}/{self._URL_PROJECTS}/{project.id}/{self._URL_TEAMS}/{team.id}/{self._URL_TEAM_MEMBERS}'
+        request_url = f'{self.client_connection.api_url}{self._URL_PROJECTS}/{project.id}/{self._URL_TEAMS}/{team.id}/{self._URL_TEAM_MEMBERS}'
         query_params = {
             'api-version' : self.api_version,
             '$skip' : '0'
