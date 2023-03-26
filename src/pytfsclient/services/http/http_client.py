@@ -34,7 +34,9 @@ class _BaseUrlSession(requests.Session):
         return urljoin(self.base_url, url)
     
 class HttpClient:
-    """Http client public class"""
+    """
+    Http client public class
+    """
 
     # Constructor
     def __init__(self, base_url: str, verify: bool=False) -> None:
@@ -87,12 +89,13 @@ class HttpClient:
 
         self.__httpClient.headers.update({'Authorization': pat_base64})
     
-    def get(self, resource: str, query_params=None, custom_headers=None):
+    def get(self, resource: str, query_params=None, custom_headers=None, cookies=None):
         """Make HTTP GET request"""
 
         response = self.__httpClient.get(resource, 
             params=query_params, 
             headers=custom_headers,
+            cookies=cookies,
             verify=self.__verify_ssl)
         response.raise_for_status()
 
