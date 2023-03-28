@@ -1,6 +1,6 @@
 from enum import Enum
-from pytfsclient.models.project.tfs_team_member import TfsTeamMemeber
-from pytfsclient.models.workitems.tfs_workitem import UpdateFieldsResult, Workitem
+from ...models.workitems.tfs_workitem import UpdateFieldsResult, Workitem
+from ...models.project.tfs_team_member import TfsTeamMember
 
 class MentionResult(Enum):
     MENTION_SUCCESS = 0
@@ -15,8 +15,8 @@ class MentionClient:
     _TFS_HISTORY_FIELD = 'System.History'
     
     @staticmethod
-    def send_mention(self, workitem: Workitem, to_user: TfsTeamMemeber, \
-                    message: str, from_user: TfsTeamMemeber = None) -> MentionResult:
+    def send_mention(self, workitem: Workitem, to_user: TfsTeamMember, \
+                    message: str, from_user: TfsTeamMember = None) -> MentionResult:
         """
         Sends mention to user. Writes mention to History of workitem
         WARNING: this function uses non-public API

@@ -1,4 +1,4 @@
-from pytfsclient.services.http.http_client import HttpClient
+from .http.http_client import HttpClient
 
 class ClientConnection:
     """

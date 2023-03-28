@@ -33,10 +33,9 @@ class HttpClientAuthTests(unittest.TestCase):
     def test_cookie_set_get(self):
         
         # Arrange
-        cookie_name = "myCookie"
         cookie_value = "myCookieValue"
 
-        cookies = dict(cookie_name=cookie_value)
+        cookies = dict(myCookie=cookie_value)
 
         request_url = "cookies"
 
