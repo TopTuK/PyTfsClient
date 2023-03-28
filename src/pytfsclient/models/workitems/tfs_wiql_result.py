@@ -1,6 +1,5 @@
 from typing import List
-
-from pytfsclient.models.workitems.tfs_workitem import Workitem
+from tfs_workitem import Workitem
 
 class WiqlResult:
     """

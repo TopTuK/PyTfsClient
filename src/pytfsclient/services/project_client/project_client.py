@@ -1,9 +1,9 @@
-from pytfsclient.models.client_error import ClientError
-from pytfsclient.models.project.tfs_project import TfsProject
-from pytfsclient.models.project.tfs_team import TfsTeam
-from pytfsclient.models.project.tfs_team_member import TfsTeamMember
-from pytfsclient.services.base_client import BaseClient
-from pytfsclient.services.client_connection import ClientConnection
+from ...models.client_error import ClientError
+from ...models.project.tfs_project import TfsProject
+from ...models.project.tfs_team import TfsTeam
+from ...models.project.tfs_team_member import TfsTeamMember
+from ...services.base_client import BaseClient
+from ...services.client_connection import ClientConnection
 from typing import List
 
 class ProjectClient(BaseClient):
