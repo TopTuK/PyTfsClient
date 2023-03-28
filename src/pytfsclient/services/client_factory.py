@@ -1,8 +1,8 @@
-from pytfsclient.services.client_connection import ClientConnection
-from pytfsclient.services.http.http_client import HttpClient
-from pytfsclient.services.mention_client.mention_client import MentionClient
-from pytfsclient.services.project_client.project_client import ProjectClient
-from pytfsclient.services.workitem_client.workitem_client import WorkitemClient
+from .http.http_client import HttpClient
+from .client_connection import ClientConnection
+from .mention_client.mention_client import MentionClient
+from .project_client.project_client import ProjectClient
+from .workitem_client.workitem_client import WorkitemClient
 
 class ClientFactory:
     """

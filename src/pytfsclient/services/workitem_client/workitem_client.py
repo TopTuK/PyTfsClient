@@ -1,13 +1,12 @@
 from typing import List
-
 from requests import HTTPError
-from pytfsclient.models.client_error import ClientError
-from pytfsclient.models.workitems.tfs_wiql_result import WiqlResult
-from pytfsclient.models.workitems.tfs_workitem import Workitem
-from pytfsclient.models.workitems.tfs_workitem_relation import WorkitemRelation
-from pytfsclient.services.base_client import BaseClient
-from pytfsclient.services.client_connection import ClientConnection
-from pytfsclient.services.helpers.batch_iterable import batch
+from ...models.client_error import ClientError
+from ...models.workitems.tfs_wiql_result import WiqlResult
+from ...models.workitems.tfs_workitem import Workitem
+from ...models.workitems.tfs_workitem_relation import WorkitemRelation
+from ..base_client import BaseClient
+from ..client_connection import ClientConnection
+from ..helpers.batch_iterable import batch
 
 class WorkitemClient(BaseClient):
     """

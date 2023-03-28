@@ -1,6 +1,6 @@
 from abc import ABC
-from pytfsclient.services.client_connection import ClientConnection
-from pytfsclient.services.http.http_client import HttpClient
+from .client_connection import ClientConnection
+from .http.http_client import HttpClient
 
 class BaseClient(ABC):
     """Abstract base client class"""
