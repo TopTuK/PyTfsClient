@@ -12,7 +12,7 @@ class ClientConnection:
             server_url += '/'
         
         self.__server_url = server_url
-        self.__http_client = HttpClient(server_url, verify=http_client.verify_ssl)
+        self.__http_client = http_client
 
         def get_collection_and_project():
             splitted_project = project_name.split('/')
