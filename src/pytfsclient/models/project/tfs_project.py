@@ -58,7 +58,7 @@ class TfsProject:
 
         team_project.__id = json_item['id']
         team_project.__name = json_item['name']
-        team_project.__description = json_item['description']
+        team_project.__description = json_item['description'] if 'description' in json_item else None
         team_project.__url = json_item['url']
         
         return team_project

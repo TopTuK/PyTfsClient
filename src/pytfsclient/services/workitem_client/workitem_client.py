@@ -5,7 +5,7 @@ from ...models.workitems.tfs_wiql_result import WiqlResult
 from ...models.workitems.tfs_workitem import Workitem
 from ...models.workitems.tfs_workitem_relation import WorkitemRelation
 from ..base_client import BaseClient
-from ..client_connection import ClientConnection
+from ...client_connection import ClientConnection
 from ..helpers.batch_iterable import batch
 
 class WorkitemClient(BaseClient):

@@ -8,20 +8,20 @@ from setuptools import setup, find_packages
 # https://docs.python.org/3/distutils/setupscript.html
 setup(
     name='PyTfsClient',
-    version='1.0',
+    version='1.3.2',
     license='MIT',
     description='Python Microsoft Team Foundation Server Library is a  client that can work with Microsoft TFS workitems',
     url='https://github.com/TopTuK/PyTfsClient',
     author='TopTuK',
     author_email='cydoor88@gmail.com',
-    # download_url = 'https://github.com/TopTuK/PyTfsClient/archive/refs/tags/v0.2-beta.tar.gz',  
+    package_dir={'': 'src'},
+    packages=find_packages(where='src', include=['pytfsclient*'], exclude=['.test', '*.test', 'test', 'test*', 'test.*']),
+    include_package_data=True,
     install_requires=[
         'urljoin',
-        'requests'
+        'requests',
+        'requests_ntlm',
     ],
-    #package_dir={"": ""},
-    #packages=find_packages(where="lib"),
-    packages=["pytfsclient"],
     classifiers=[
         'Development Status :: 4 - Beta',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
         'Intended Audience :: Developers',      # Define that your audience are developers
