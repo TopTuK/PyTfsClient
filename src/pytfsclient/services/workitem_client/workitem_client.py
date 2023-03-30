@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from requests import HTTPError
 from ...models.client_error import ClientError
 from ...models.workitems.tfs_wiql_result import WiqlResult
@@ -104,7 +104,7 @@ class WorkitemClient(BaseClient):
     
     # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/create?view=azure-devops-rest-6.0
     def create_workitem(self, type_name: str, \
-        item_fields: List[dict] = None, item_relations: List[WorkitemRelation] = None, \
+        item_fields: Dict[str, str] = None, item_relations: List[WorkitemRelation] = None, \
         expand: str = 'All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> Workitem:
         """
@@ -117,7 +117,7 @@ class WorkitemClient(BaseClient):
         request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/${type_name}'
 
         # query params
-        query_params = WorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
+        query_params = WorkitemClient._make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
 
         # request body. TODO: Add missing @from param!
         request_body = [dict(op='add', path='/fields/{}'.format(name), value=value) for name, value in item_fields.items()] \
@@ -214,7 +214,7 @@ class WorkitemClient(BaseClient):
             raise ClientError(f'WorkitemClient::copy_workitem: EXCEPTION raised. Msg: {ex}', ex)
 
     # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0
-    def update_workitem_fields(self, workitem, item_fields: List[dict], \
+    def update_workitem_fields(self, workitem, item_fields: Dict[str, str], \
         expand: str='All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> Workitem:
         """
@@ -234,7 +234,7 @@ class WorkitemClient(BaseClient):
         request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/{workitem.id}'
 
         # query params
-        query_params = WorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
+        query_params = WorkitemClient._make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
 
         # request body
         request_body = [dict(op='add', path='/fields/{}'.format(name), value=value) for name, value in item_fields.items()] \
@@ -287,7 +287,7 @@ class WorkitemClient(BaseClient):
         request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/{source_workitem}'
 
         # query params
-        query_params = WorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
+        query_params = WorkitemClient._make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
 
         # request body
         request_body = [dict(op='Add', path='/relations/-', \
@@ -336,7 +336,7 @@ class WorkitemClient(BaseClient):
         request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/{workitem.id}'
 
         # query params
-        query_params = WorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
+        query_params = WorkitemClient._make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
 
         # request body
         request_body = [
@@ -433,7 +433,7 @@ class WorkitemClient(BaseClient):
             if not http_response:
                 raise ClientError('WorkitemClient::run_wiql: can\'t get response from TFS Server')
             
-            return WiqlResult.from_json(self, ClientError.json())
+            return WiqlResult.from_json(self, http_response.json())
         except ValueError as ex:
             raise ClientError(f'WorkitemClient::run_wiql: response is not json. Msg: {ex}', ex)    
         except Exception as ex:
