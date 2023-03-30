@@ -1,4 +1,4 @@
-from .http.http_client import HttpClient
+from .services.http.http_client import HttpClient
 
 class ClientConnection:
     """

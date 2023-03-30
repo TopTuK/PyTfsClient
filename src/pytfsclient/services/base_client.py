@@ -1,5 +1,5 @@
 from abc import ABC
-from .client_connection import ClientConnection
+from ..client_connection import ClientConnection
 from .http.http_client import HttpClient
 
 class BaseClient(ABC):

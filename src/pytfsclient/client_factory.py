@@ -1,8 +1,8 @@
-from .http.http_client import HttpClient
+from .services.http.http_client import HttpClient
 from .client_connection import ClientConnection
-from .mention_client.mention_client import MentionClient
-from .project_client.project_client import ProjectClient
-from .workitem_client.workitem_client import WorkitemClient
+from .services.mention_client.mention_client import MentionClient
+from .services.project_client.project_client import ProjectClient
+from .services.workitem_client.workitem_client import WorkitemClient
 
 class ClientFactory:
     """

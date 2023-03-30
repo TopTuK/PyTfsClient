@@ -1,6 +1,6 @@
 import context
 import unittest
-from pytfsclient.services.client_factory import ClientFactory
+from pytfsclient.client_factory import ClientFactory
 
 class ClientConnectionTests(unittest.TestCase):
     def setUp(self):
