@@ -51,4 +51,4 @@ jobs:
           ENV_SERVER_URL: ${{ secrets.ENV_SERVER_URL }}
           ENV_PROJECT_NAME: ${{ secrets.ENV_PROJECT_NAME }}
         run: |
-          pytest .\\test\\test_integration.py
+          pytest ./test/test_integration.py
