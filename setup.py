@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 # https://docs.python.org/3/distutils/setupscript.html
 setup(
     name='PyTfsClient',
-    version='1.3.3',
+    version='1.3.4',
     license='MIT',
     description='Python Microsoft Team Foundation Server Library is a  client that can work with Microsoft TFS workitems',
     url='https://github.com/TopTuK/PyTfsClient',

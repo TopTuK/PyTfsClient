@@ -161,18 +161,45 @@ class Workitem:
     # Update internal workitem fields
     def update_fields(self) -> UpdateFieldsResult:
         """
+        Updates values of fields of workitem.
         """
+
+        if len(self.__updated_fields) == 0:
+            return UpdateFieldsResult.UPDATE_EMPTY
         
-        pass
+        try:
+            # update workitem fields
+            item = self.__client.update_workitem_fields(self.id, self.__updated_fields, expand='fields')
+
+            if not item:
+                return UpdateFieldsResult.UPDATE_FAIL
+            
+            self.__updated_fields.clear()
+            self.__fields = item.__fields
+
+            return UpdateFieldsResult.UPDATE_SUCCESS
+        except:
+            return UpdateFieldsResult.UPDATE_EXCEPTION
 
     ### RELATION REGION ###
 
     def add_relation(self, destination_workitem, relation_type_name: str, \
         relation_attributes = None) -> UpdateRelationsResult:
         """
+        Adds relation to workitem.
         """
 
-        pass
+        try:
+            item = self.__client.add_relation(self.id, destination_workitem, relation_type_name, \
+                relation_attributes)
+            
+            if not item:
+                return UpdateRelationsResult.UPDATE_FAIL
+
+            self.__relations = item.__relations
+            return UpdateRelationsResult.UPDATE_SUCCESS
+        except:
+            return UpdateRelationsResult.UPDATE_EXCEPTION
 
     ### END RELATION REGION ###
 

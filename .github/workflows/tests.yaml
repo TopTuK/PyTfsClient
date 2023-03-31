@@ -1,0 +1,54 @@
+name: Run tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  # For pull requests, cancel all currently-running jobs for this workflow
+  # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint_code:
+    name: lint code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        id: setup-python
+        with:
+          python-version: '3.8'
+      - name: Install requirements
+        run: |
+          pip install --no-cache-dir flake8
+      - name: run flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 src/pytfsclient --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  test_lib:
+    name: integration test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: install Python
+        uses: actions/setup-python@v4
+        id: setup-python
+        with:
+          python-version: '3.8'
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-cache-dir urljoin requests requests_ntlm pytest
+      - name: Run integration tests
+        env:
+          ENV_PAT: ${{ secrets.ENV_PAT }}
+          ENV_SERVER_URL: ${{ secrets.ENV_SERVER_URL }}
+          ENV_PROJECT_NAME: ${{ secrets.ENV_PROJECT_NAME }}
+        run: |
+          pytest .\test\test_integration.py
