@@ -1,155 +1,157 @@
-import context
-import unittest
-import warnings
+import pytest
 from pytfsclient.services.http.http_client import HttpClient
 
+### COMMAND 
+# pytest .\test\test_http_client_basic.py
 # https://stackoverflow.com/questions/5725430/http-test-server-accepting-get-post-requests
-class HttpClientBasicTests(unittest.TestCase):
 
-    def setUp(self):
-        warnings.simplefilter('ignore', category=ResourceWarning)
+@pytest.fixture(scope="module")
+def base_url() -> str:
+    return 'https://httpbin.org/'
 
-        self.base_url = 'https://httpbin.org/'
+@pytest.fixture(scope="module")
+def http_client(base_url: str) -> HttpClient:
+    return HttpClient(base_url, verify=True)
 
-        self.get_action = 'get'
-        self.post_action = 'post'
-        self.patch_action = 'patch'
+@pytest.fixture(scope="module")
+def get_action() -> str:
+    return 'get'
 
-        self.http_client: HttpClient = HttpClient(self.base_url, verify=True)
+@pytest.fixture(scope="module")
+def post_action() -> str:
+    return 'post'
 
-    # GET request test
-    def test_get_request_success(self):
-        # Arrange
+@pytest.fixture(scope="module")
+def patch_action() -> str:
+    return 'patch'
 
-        # Act
-        http_response = self.http_client.get(self.get_action)
+# GET request test
+def test_get_request_success(http_client: HttpClient, get_action: str):
+    # Arrange
 
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
+    # Act
+    http_response = http_client.get(get_action)
     
-    # GET Returns json response with args
-    def test_get_requests_args_success(self):
-
-        # Arrange
-        args = {
-            "id": "1",
-            "my_param": "my_value"
-        }
-
-        # Act
-        http_response = self.http_client.get(self.get_action, query_params=args)
-
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
-
-        content = http_response.json()
-        self.assertIsNotNone(content, 'Can\'t convert HTTP content to json')
-        self.assertIsNotNone(content['args'], 'HTTP Content args are None')
-        
-        self.assertEqual(content['args']['id'], args['id'])
-        self.assertEqual(content['args']['my_param'], args['my_param'])
-
-    # POST request. Returns success response
-    def test_post_request_success(self):
-        # Arrange
-
-        # Act
-        http_response = self.http_client.post(self.post_action, None)
-
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
-
-    # POST request. Returns json response with args
-    def test_post_request_args_success(self):
-        # Arrange
-        args = {
-            "id": "1",
-            "my_param": "my_value"
-        }
-
-        # Act
-        http_response = self.http_client.post(self.post_action, args)
-
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
-
-        content = http_response.json()
-        self.assertIsNotNone(content, 'Can\'t convert HTTP content to json')
-        self.assertIsNotNone(content['form'], 'HTTP Content args are None')
-        
-        self.assertEqual(content['form']['id'], args['id'])
-        self.assertEqual(content['form']['my_param'], args['my_param'])
-
-    # POST JSON request. Returns json response with args
-    def test_post_json_request_success(self):
-        # Arrange
-        json = [
-            {
-                "A": "AA",
-                "B": "BB",
-            },
-            {
-                "C": True,
-                "D": 1,
-            }
-        ]
-
-        # Act
-        http_response = self.http_client.post_json(self.post_action, json_data=json)
-
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
-
-        content = http_response.json()
-        self.assertIsNotNone(content, 'Can\'t convert HTTP content to json')
-        self.assertIsNotNone(content['json'], 'HTTP json content does not have json elem')
-
-        self.assertEqual(2, len(content['json']))
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
     
-    # PATCH request Returns success response
-    def test_patch_request_success(self):
-        # Arrange
+# GET Returns json response with args
+def test_get_requests_args_success(http_client: HttpClient, get_action: str):
+    # Arrange
+    args = {
+        "id": "1",
+        "my_param": "my_value"
+    }   
 
-        # Act
-        http_response = self.http_client.patch(self.patch_action, None)
+    # Act
+    http_response = http_client.get(get_action, query_params=args)
 
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
 
-    # patch JSON request. Returns json response with args
-    def test_patch_json_request_success(self):
-        # Arrange
-        json = [
-            {
-                "A": "AA",
-                "B": "BB",
-            },
-            {
-                "C": True,
-                "D": 1,
-            }
-        ]
+    content = http_response.json()
+    assert content, 'Can\'t convert HTTP content to json'
+    assert content['args'], 'HTTP Content args are None'
 
-        # Act
-        http_response = self.http_client.patch_json(self.patch_action, json_data=json)
+    assert content['args']['id'] == args['id']
+    assert content['args']['my_param'] == args['my_param']
 
-        # Assert
-        self.assertIsNotNone(http_response, 'HTTP Response is None')
-        self.assertIsNotNone(http_response.content, 'HTTP Response content is None')
+# POST request. Returns success response
+def test_post_request_success(http_client: HttpClient, post_action: str):
+    # Arrange 
 
-        content = http_response.json()
-        self.assertIsNotNone(content, 'Can\'t convert HTTP content to json')
-        self.assertIsNotNone(content['json'], 'HTTP json content does not have json elem')
+    # Act
+    http_response = http_client.post(post_action, None)
 
-        self.assertEqual(2, len(content['json']))
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
 
+# POST request. Returns json response with args
+def test_post_request_args_success(http_client: HttpClient, post_action: str):
+    # Arrange
+    args = {
+        "id": "1",
+        "my_param": "my_value"
+    }
 
-# Executing the tests in the above test case class
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    # Act
+    http_response = http_client.post(post_action, args)
+
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
+
+    content = http_response.json()
+    assert content, 'Can\'t convert HTTP content to json'
+    assert content['form'], 'HTTP Content args are None'
+
+    assert content['form']['id'] == args['id']
+    assert content['form']['my_param'] == args['my_param']
+
+# POST JSON request. Returns json response with args
+def test_post_json_request_success(http_client: HttpClient, post_action: str):
+    # Arrange
+    json = [
+        {
+            "A": "AA",
+            "B": "BB",
+        },
+        {
+            "C": True,
+            "D": 1,
+        }
+    ]
+
+    # Act
+    http_response = http_client.post_json(post_action, json_data=json)
+
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
+
+    content = http_response.json()
+    assert content, 'Can\'t convert HTTP content to json'
+    assert content['json'], 'HTTP json content does not have json elem'
+
+    assert len(json) == len(content['json'])
+    
+# PATCH request Returns success response
+def test_patch_request_success(http_client: HttpClient, patch_action: str):
+    # Arrange
+
+    # Act
+    http_response = http_client.patch(patch_action, None)
+
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
+
+# patch JSON request. Returns json response with args
+def test_patch_json_request_success(http_client: HttpClient, patch_action: str):
+    # Arrange
+    json = [
+        {
+            "A": "AA",
+            "B": "BB",
+        },
+        {
+            "C": True,
+            "D": 1,
+        }
+    ]
+
+    # Act
+    http_response = http_client.patch_json(patch_action, json_data=json)
+
+    # Assert
+    assert http_response, 'HTTP Response is None'
+    assert http_response.content, 'HTTP Response content is None'
+
+    content = http_response.json()
+    assert content, 'Can\'t convert HTTP content to json'
+    assert content['json'], 'HTTP json content does not have json elem'
+
+    assert len(json) == len(content['json'])

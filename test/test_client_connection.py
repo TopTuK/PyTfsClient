@@ -1,40 +1,34 @@
-import context
-import unittest
+import pytest
 from pytfsclient.client_factory import ClientFactory
 
-class ClientConnectionTests(unittest.TestCase):
-    def setUp(self):
-        self.server_url = 'http://localhost/'
-        
-        self.collection = 'DefaultCollection'
-        self.project = 'TestProject'
-        self.project_name = f'{self.collection}/{self.project}'
+### Command
+# pytest .\test\test_client_connection2.py
 
-        self.fake_pat = 'fakepat'
-    
-    # Basic client connection test with given params
-    def test_create_client_connection(self):
-        # Arrange
-        api_url = f'{self.collection}/_apis/'
-        project_api_url = f'{self.collection}/{self.project}/_apis/'
+def test_create_client_connection():
+    # Arrange
+    server_url = 'http://localhost/'
+    collection = 'DefaultCollection'
+    project = 'TestProject'
 
-        # Act
-        client_connection = ClientFactory.create_pat(self.fake_pat, self.server_url, self.project_name)
+    project_name = f'{collection}/{project}'
+    fake_pat = 'fakepat'
 
-        # Assert
-        self.assertEqual(client_connection.server_url, self.server_url)
-        self.assertEqual(client_connection.collection, self.collection)
-        self.assertEqual(client_connection.project_name, self.project)
+    api_url = f'{collection}/_apis/'
+    project_api_url = f'{collection}/{project}/_apis/'
 
-        # Check server url
-        self.assertIsNotNone(client_connection.http_client)
-        self.assertIsNotNone(client_connection.http_client.base_url)
-        self.assertEqual(client_connection.http_client.base_url, self.server_url)
+    # Act
+    client_connection = ClientFactory.create_pat(fake_pat, server_url, project_name)
 
-        # Check api urls
-        self.assertEqual(client_connection.api_url, api_url)
-        self.assertEqual(client_connection.project_url, project_api_url)
+    # Assert
+    assert client_connection.server_url == server_url
+    assert client_connection.collection == collection
+    assert client_connection.project_name == project
 
-# Executing the tests in the above test case class
-if __name__ == "__main__":
-    unittest.main()
+    # Check server url
+    assert client_connection.http_client
+    assert client_connection.http_client.base_url
+    assert client_connection.http_client.base_url == server_url
+
+    # Check api urls
+    assert client_connection.api_url == api_url
+    assert client_connection.project_url == project_api_url
