@@ -157,14 +157,14 @@ def test__project_client(project_client: ProjectClient):
 
     # Assert
     assert projects, 'Can\'t get projects -> None'
-    assert len(projects) < 1, 'Projects list count is less than 1'
+    assert len(projects) > 0, 'Projects list count is less than 1'
 
     assert teams, 'Can\'t get teams'
-    assert len(teams) < 1, 'Teams list count is less than 1'
+    assert len(teams) > 0, 'Teams list count is less than 1'
 
     assert prj_teams, f'Can\'t get project teams. Project: {projects[0].id} {projects[0].name}'
 
     assert members, f'Can\'t get members of {prj_teams[0].id} {prj_teams[0].name} for {projects[0].id} {projects[0].name}'
-    assert len(members) < 1, 'Members list count is less than 1'
+    assert len(members) > 0, 'Members list count is less than 1'
 
 ### END OF MANAGING PROJECTS TESTS
