@@ -3,10 +3,7 @@ from typing import List, Dict
 from .tfs_workitem_relation_model import TfsWorkitemRelation
 from .tfs_project_model import TeamMember
 
-_IgnoreFields = [
-    'System.Id',
-    'System.WorkItemType'
-]
+from .models.workitems.tfs_workitem import Workitem, UpdateFieldsResult, UpdateRelationsResult
 
 class TfsUpdateFieldsResult(Enum):
     """
@@ -67,14 +64,14 @@ class TfsWorkitem:
         """
         Id of workitem
         """
-        return self.__id
+        return self.__item.id
     
     @property
     def url(self) -> str:
         """
         URL of workitem
         """
-        return self.__url
+        return self.__item.url
 
     @property
     def title(self) -> str:
@@ -82,21 +79,19 @@ class TfsWorkitem:
         Current title of workitem. Can be edited.
         Returns None if workitem doesn't contain title
         """
-        if 'System.Title' in self.__updated_fields:
-            return self.__updated_fields['System.Title']
-        
-        return self.__fields['System.Title'] if 'System.Title' in self.__fields else None
+
+        return self.__item.title
     
     @title.setter
     def title(self, value: str) -> None:
-        self.__updated_fields['System.Title'] = value
+        self.__item.title = value
     
     @property
     def revision(self) -> int:
         """
         Revision of workitem.
         """
-        return self.__fields['System.Rev'] if 'System.Rev' in self.__fields else None
+        return self.__item.revision
     
     @property
     def assigned_to(self) -> str:
@@ -105,31 +100,21 @@ class TfsWorkitem:
         If workitem contains AssignedTo property then returns 'displayName'.
         If workitem doesn't contain AssignedTo property then returns None.
         """
-        if 'System.AssignedTo' in self.__updated_fields:
-            return self.__updated_fields['System.AssignedTo']
-
-        if 'System.AssignedTo' in self.__fields:
-            user = self.__fields['System.AssignedTo']
-            if 'displayName' in user:
-                return user['displayName']
-            else:
-                return str(user)
-
-        return None
+        return self.__item.assigned_to
     
     @property
     def fields_keys(self) -> List[str]:
         """
         Returns current list of fields names of workitem (properties names)
         """
-        return self.__fields.keys()
+        return self.__items.fields_keys
 
     @property
     def type_name(self) -> str:
         """
         Returns type name of workitem.
         """
-        return self.__type_name
+        return self.__item.type_name
     
     @property
     def description(self) -> str:
@@ -137,24 +122,20 @@ class TfsWorkitem:
         Returns description property of workitem. Can be edited.
         If workitem does not contain 'System.Description' property by default then retuns None
         """
-        if 'System.Description' in self.__updated_fields:
-            return self.__updated_fields['System.Description']
-
-        return self.__fields['System.Description'] if 'System.Description' in self.__fields else None
+        
+        return self.__item.description
 
     @description.setter
     def description(self, value: str) -> None:
-        self.__updated_fields['System.Description'] = value
+        self.__item.description = value
     
     @property
     def fields(self) -> Dict[str, str]:
         """
         Returns Dictonary(str, str) of
         """
-        # Merge two dictonaries
-        # python 3.9 and higher (z = x | y)
-        # Using z = { **x, **y }
-        return {**self.__updated_fields, **self.__fields}
+
+        return self.__items.fields
 
     def __getitem__(self, fld_name: str) -> str:
         """
@@ -163,10 +144,7 @@ class TfsWorkitem:
         """
         assert fld_name, 'Field name can\'t be None'
 
-        if fld_name in self.__updated_fields:
-            return self.__updated_fields[fld_name]
-        
-        return self.__fields[fld_name] if fld_name in self.__fields else None
+        return self.__item[fld_name]
 
     def __setitem__(self, fld_name: str, fld_value: str) -> None:
         """
@@ -178,14 +156,14 @@ class TfsWorkitem:
         assert fld_name, 'Field name can\'t be None'
         assert fld_value, 'Field value can\'t be None'
 
-        self.__updated_fields[fld_name] = fld_value
+        self.__item[fld_name] = fld_value
     
     @property
     def relations(self) -> List[TfsWorkitemRelation]:
         """
         Returns list of relations (TfsWorkitemRelation) of workitem
         """
-        return self.__relations
+        return [TfsWorkitemRelation.from_relation(rel) for rel in self.__item.relations]
     
     ### END PROPERTY REGION ###
 
@@ -195,20 +173,18 @@ class TfsWorkitem:
         Updates values of fields of workitem. It makes an api call.
         :return: TfsUpdateFieldsResult value. If success, current workitem fields are updated.
         """
-        if len(self.__updated_fields) == 0:
-            return TfsUpdateFieldsResult.UPDATE_EMPTY
 
         try:
-            # update workitem fields
-            item = self.__client.update_workitem_fields(self.id, self.__updated_fields, expand='fields')
+            update_result: UpdateFieldsResult = self.__item.update_fields()
 
-            if not item:
+            if update_result == UpdateFieldsResult.UPDATE_SUCCESS:
+                return TfsUpdateFieldsResult.UPDATE_SUCCESS
+            elif update_result == UpdateFieldsResult.UPDATE_EMPTY:
+                return TfsUpdateFieldsResult.UPDATE_EMPTY
+            elif update_result == UpdateFieldsResult.UPDATE_EXCEPTION:
+                return TfsUpdateFieldsResult.UPDATE_EXCEPTION
+            else:
                 return TfsUpdateFieldsResult.UPDATE_FAIL
-            
-            self.__updated_fields.clear()
-            self.__fields = item.__fields
-
-            return TfsUpdateFieldsResult.UPDATE_SUCCESS
         except:
             return TfsUpdateFieldsResult.UPDATE_EXCEPTION
     
@@ -224,71 +200,27 @@ class TfsWorkitem:
         :return: TfsUpdateRelationsResult value. If success then relations of workitem are updated successfully.
         """
 
-        try:
-            item = self.__client.add_relation(self.id, destination_workitem, relation_type_name, \
-                relation_attributes)
-            
-            if not item:
-                return TfsUpdateRelationsResult.UPDATE_FAIL
+        id = None
+        if destination_workitem is int:
+            id = destination_workitem
+        elif destination_workitem is TfsWorkitem:
+            id = destination_workitem.id
 
-            self.__relations = item.__relations
+        update_result: UpdateRelationsResult = self.__item.add_relation(id, relation_type_name, relation_attributes)
+
+        if update_result == UpdateRelationsResult.UPDATE_SUCCESS:
             return TfsUpdateRelationsResult.UPDATE_SUCCESS
-        except:
+        elif update_result == UpdateRelationsResult.UPDATE_EXCEPTION:
             return TfsUpdateRelationsResult.UPDATE_EXCEPTION
+        else:
+            return TfsUpdateRelationsResult.UPDATE_FAIL
 
     ### END RELATION REGION ###
 
-    ### MENTION USER REGION
-
-    def mention_user(self, user: TeamMember, msg: str) -> TfsUpdateFieldsResult:
-        """
-        Sends mention to user. Writes mention to History of workitem
-        WARNING: this function uses non-public API
-
-        :param: user (TeamMember): user to mention.
-        :param: msg (str): mention text. Can\'t be None
-        :return: TfsUpdateFieldsResult - result of mention user
-        """
-        assert user, 'TfsWokitem::mention_user: user can\'t be None'
-        assert msg, 'TfsWokitem::mention_user: mention message can\'t be None'
-
-        mention = '<a href=\"#\" data-vss-mention=\"version:2.0,{}\">@{}</a>: {}'.format(user.id, user.display_name, msg)
-
-        self.__updated_fields['System.History'] = mention
-        return self.update_fields()
-
-    ### END MENTION USER REGION
-
-    #@staticmethod
     @classmethod
-    def from_json(cls, client, json_item):
-        """
-        Creates TfsWorkitem instance from given json item instance.
-        """
-        #wi = TfsWorkitem()
+    def from_workitem(cls, workitem: Workitem):
         wi = cls()
 
-        wi.__client = client
-        wi.__raw = json_item
-
-        wi.__id = json_item['id']
-        wi.__url = json_item['url']
-
-        wi.__updated_fields = {}
-
-        # Fields
-        if 'fields' in json_item:
-            wi.__fields = { fld : value for (fld, value) in json_item['fields'].items() if fld not in _IgnoreFields }
-            wi.__type_name = json_item['fields']['System.WorkItemType'] if 'System.WorkItemType' in json_item['fields'] else None
-        else:
-            wi.__fields = {}
-            wi.__type_name = None
-
-        # Relations
-        wi.__relations = None
-        if 'relations' in json_item:
-            wi.__relations = [TfsWorkitemRelation.from_json(json_relation) for json_relation in json_item['relations']]
-        else:
-            wi.__relations = []
+        wi.__item: Workitem = workitem
 
         return wi
