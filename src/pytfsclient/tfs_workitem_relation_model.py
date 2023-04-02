@@ -1,4 +1,5 @@
 from enum import Enum
+from .models.workitems.tfs_workitem_relation import WorkitemRelation
 
 class RelationTypes(Enum):
     PARENT = 0
@@ -92,5 +93,15 @@ class TfsWorkitemRelation:
         relation.__relation_name = relation_name
         relation.__url = workitem.url
         relation.__destination_id = workitem.id
+
+        return relation
+    
+    @classmethod
+    def from_relation(cls, rel: WorkitemRelation):
+        relation = cls()
+
+        relation.__relation_name = rel.relation_name
+        relation.__url = rel.url
+        relation.__destination_id = rel.destination_id
 
         return relation

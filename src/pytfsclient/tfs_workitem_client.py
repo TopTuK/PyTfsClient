@@ -1,14 +1,13 @@
+from collections import defaultdict
 from typing import List
-from urllib.error import HTTPError
-from .http_client import HttpClient
-from .tfs_client import API_VERSION, TfsBaseClient, TfsClientError, batch
+from .tfs_client import TfsBaseClient, TfsClientError
 from .tfs_workitem_model import TfsWorkitem
 from .tfs_wiql_model import TfsWiqlResult
 from .tfs_workitem_relation_model import TfsWorkitemRelation
 
-_WORKITEM_URL = 'wit/workitems'
-_WIQL_URL = 'wit/wiql'
-_QUERY_URL = 'wit/queries'
+from .client_factory import ClientFactory
+from .services.workitem_client.workitem_client import WorkitemClient
+from .models.workitems.tfs_workitem_relation import WorkitemRelation
 
 class TfsWorkitemClient:
     """
@@ -18,7 +17,7 @@ class TfsWorkitemClient:
 
     def __init__(self, client: TfsBaseClient) -> None:
         self.__client: TfsBaseClient = client
-        self.__http: HttpClient = client.http_client
+        self.__wi_client: WorkitemClient = ClientFactory.get_workitem_client(client.client_connection)
     
     @property
     def client(self) -> TfsBaseClient:
@@ -27,33 +26,6 @@ class TfsWorkitemClient:
         """
         return self.__client
 
-    def _get_items(self, request_url: str, query_params, under_project: bool = False) -> List[TfsWorkitem]:
-        """
-        Return list of TFSWorkitem or raise an exception
-        """
-
-        url = (self.client.project_url + '/' + request_url) if under_project else (self.client.api_url + '/' + request_url)
-
-        try:
-            response = self.__http.get(url, query_params=query_params)
-            
-            if not response:
-                raise TfsClientError('TfsWorkitemClient::get_items: can\'t get response from TFS server')
-            
-            json_items = response.json()
-            if 'value' in json_items:
-                json_items = json_items['value']
-                return [TfsWorkitem.from_json(self, json_item=json_item) for json_item in json_items]
-            else:
-                raise TfsClientError('TfsWorkitemClient::get_items: json http response has no value attribute')
-        except ValueError as ex:
-            raise TfsClientError('TfsWorkitemClient::get_items: EXCEPTION raised, http response is not json. Msg: {}'.format(ex))
-        except HTTPError as ex:
-            raise TfsClientError('TfsWorkitemClient::get_items: EXCEPTION raised. Got http error', ex)
-        except Exception as ex:
-            raise TfsClientError('TfsWorkitemClient::get_items: EXCEPTION raised. Msg: {}'.format(ex), ex)
-    
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/list?view=azure-devops-rest-6.0
     def get_workitems(self, item_ids, item_fields: List[str] = None, expand: str = 'All', batch_size: int = 50) -> List[TfsWorkitem]:
         """
         Return list of TfsWorkitems for given list of item ids.
@@ -66,26 +38,8 @@ class TfsWorkitemClient:
         """
         assert item_ids, 'TfsWorkitemClient::get_workitems: item ids can\'t be None'
 
-        if isinstance(item_ids, int):
-            item_ids = [item_ids]
-        if isinstance(item_ids, str):
-            item_ids = [int(item_ids)]
-
-        query_params = {
-            '$expand' : expand,
-            'api-version' : API_VERSION
-        }
-
-        if item_fields:
-            query_params['fields'] = ','.join(item_fields)
-        
-        workitems = list()
-        for items in batch(list(item_ids), batch_size):
-            query_params['ids'] = ','.join(map(str, items))
-
-            workitems += self._get_items(_WORKITEM_URL, query_params=query_params)
-        
-        return workitems
+        items = self.__wi_client.get_workitems(item_ids, item_fields, expand, batch_size)
+        return [TfsWorkitem.from_workitem(item) for item in items]
     
     def get_single_workitem(self, item_id, item_fields: List[str] = None) -> TfsWorkitem:
         """
@@ -98,18 +52,6 @@ class TfsWorkitemClient:
         assert item_id, 'TfsWorkitemClient::get_single_workitem: item_id can\'t be None'
 
         return self.get_workitems(item_ids=item_id, item_fields=item_fields)[0]
-    
-    # return dictonary with standart query params
-    @staticmethod
-    def __make_query_params(expand: str, bypass_rules: bool, suppress_notifications: bool, validate_only: bool) -> dict:
-        '''Return dictonary with standart query params'''
-        return {
-            'api-version' : API_VERSION,
-            '$expand' : expand,
-            'bypassRules' : str(bypass_rules),
-            'suppressNotifications' : str(bypass_rules),
-            'validateOnly' : str(validate_only)
-        }
     
     # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/create?view=azure-devops-rest-6.0
     def create_workitem(self, type_name: str, item_fields: List[dict] = None, item_relations: List[TfsWorkitemRelation] = None, \
@@ -129,39 +71,22 @@ class TfsWorkitemClient:
         """
         assert type_name, 'TfsWorkitemClient::create_workitem: item type name can\'t be None'
 
-        # request url
-        request_url = '{}/{}/${}'.format(self.client.project_url, _WORKITEM_URL, type_name)
+        fields = defaultdict(str)
+        if item_fields:
+            for fld_dict in item_fields:
+                for k, v in fld_dict.items():
+                    fields[k] = v
 
-        # query params
-        query_params = TfsWorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
-
-        # request body. Missing @from parametr!
-        request_body = [dict(op='add', path='/fields/{}'.format(name), value=value) for name, value in item_fields.items()] \
-            if item_fields else []
-        
-        # extend request body with relations
-        # relation = dict(rel=relation_type, url=destination_item_url, attributes=relation_attributes)
+        relations = None
         if item_relations:
-            for relation in item_relations:
-                rel = dict(rel=relation.relation_name, url=relation.url, attributes=None)
-                request_body.append(dict(op='add', path='/relations/-', value=rel))
-        
-        # custom headers. Media Types: "application/json-patch+json"
-        custom_headers = {
-            'Content-Type' : 'application/json-patch+json'
-        }
+            relations = list()
+            for rel in item_relations:
+                wi = self.__wi_client.get_single_workitem(rel.destination_id)
+                relations.append(WorkitemRelation.create(rel.relation_name, wi))
 
-        try:
-            response = self.__http.post_json(resource=request_url, json_data=request_body, \
-                query_params=query_params, custom_headers=custom_headers)
-            
-            if response:
-                return TfsWorkitem.from_json(self, response.json())
-            else:
-                raise TfsClientError('TfsWorkitemClient::create_workitem: can\'t create workitem')
-        except Exception as ex:
-            raise TfsClientError('TfsWorkitemClient::create_workitem: EXCEPTION raised. Msg: {}'.format(ex))
-    
+        item = self.__wi_client.create_workitem(type_name, fields, relations, expand, bypass_rules, suppress_notifications, validate_only)
+        return TfsWorkitem.from_workitem(item)
+
     def copy_workitem(self, source_item, item_fields: List[str] = None, item_ignore_fileds: List[str] = None) -> TfsWorkitem:
         """
         Creates copy of given workitem.
@@ -173,67 +98,18 @@ class TfsWorkitemClient:
         """
         assert source_item, 'TfsWorkitemClient::copy_workitem: source_item can\'t be None'
 
-        if isinstance(source_item, int):
-            source_item = self.get_single_workitem(source_item)
-        
-        if (not isinstance(source_item, TfsWorkitem)) or (source_item is None):
-            raise TfsClientError('TfsWorkitemClient::copy_workitem: source item is None')
-
-        def copy_wi_fields():
-            ignore_fields = [
-                'System.TeamProject',
-                'System.AreaId',
-                'System.AreaPath',
-                'System.AreaLevel1',
-                'System.AreaLevel2',
-                'System.AreaLevel3',
-                'System.AreaLevel4',
-                'System.Id',
-                'System.NodeName',
-                'System.Rev',
-                'System.AutorizedDate',
-                'System.RevisedDate',
-                'System.IterationId',
-                'System.IterationLevel1',
-                'System.IterationLevel2',
-                'System.IterationLevel3',
-                'System.IterationLevel4',
-                'System.CreatedBy',
-                'System.ChangedDate',
-                'System.ChangedBy',
-                'System.AuthorizedAs',
-                'System.AuthorizedDate',
-                'System.Watermark',
-                'System.BoardColumn'
-            ]
-
-            source_item_fields = source_item.fields
-
-            fields = {}
-            for fld_name, fld_value in source_item_fields.items():
-                if item_ignore_fileds:
-                    if fld_name in item_ignore_fileds:
-                        continue
-
-                if fld_name in ignore_fields:
-                    continue
-
-                if item_fields:
-                    fields[fld_name] = item_fields[fld_name] if (fld_name in item_fields) else fld_value
-                else:
-                    fields[fld_name] = fld_value
-
-            return fields
-
-        item_type_name = source_item.type_name
-        fields = copy_wi_fields()
-
         try:
-            return self.create_workitem(item_type_name, item_fields=fields)
+            id = None
+            if isinstance(source_item, int):
+                id = source_item
+            elif isinstance(source_item, TfsWorkitem):
+                id = source_item.id
+
+            item = self.__wi_client.copy_workitem(id, item_fields, item_ignore_fileds)
+            return TfsWorkitem.from_workitem(item)
         except Exception as ex:
             raise TfsClientError('TfsWorkitemClient::copy_workitem: EXCEPTION raised. Msg: {}'.format(ex), ex)
     
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0
     def update_workitem_fields(self, workitem, item_fields: List[dict], \
         expand: str='All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> TfsWorkitem:
@@ -251,41 +127,27 @@ class TfsWorkitemClient:
         assert workitem, 'TfsWorkitemClient::update_workitem_fields: workitem can\'t be None'
         assert item_fields, 'TfsWorkitemClient::update_workitem_fields: item_fields can\'t be None'
 
+        id = None
+
         if isinstance(workitem, int):
-            workitem = self.get_single_workitem(workitem)
-        
-        if (not isinstance(workitem, TfsWorkitem)) or (workitem is None):
-            raise TfsClientError('TfsWorkitemClient::update_workitem_fields: workitem is None')
-        
-        # request url
-        request_url = '{}/{}/{}'.format(self.client.project_url, _WORKITEM_URL, workitem.id)
+            id = workitem
+        elif isinstance(workitem, TfsWorkitem):
+            id = workitem.id
 
-        # query params
-        query_params = TfsWorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
-
-        # request body
-        request_body = [dict(op='add', path='/fields/{}'.format(name), value=value) for name, value in item_fields.items()] \
-            if item_fields else []
+        fields = defaultdict(str)
+        if item_fields:
+            for fld_dict in item_fields:
+                for k, v in fld_dict.items():
+                    fields[k] = v
         
-        # custom headers. Media Types: "application/json-patch+json"
-        custom_headers = {
-            'Content-Type' : 'application/json-patch+json'
-        }
-
-        try:
-            response = self.__http.patch_json(request_url, request_body, \
-                query_params=query_params, custom_headers=custom_headers)
-            
-            if response:
-                return TfsWorkitem.from_json(self, response.json())
-            else:
-                raise TfsClientError('TfsWorkitemClient::update_workitem_fields: can\'t update workitem fields. Response has error')
+        try:            
+            item = self.__wi_client.update_workitem_fields(id, fields, expand, bypass_rules, suppress_notifications, validate_only)
+            return TfsWorkitem.from_workitem(item)
         except Exception as ex:
             raise TfsClientError('TfsWorkitemClient::update_workitem_fields: EXCEPTION raised. Msg: {}'.format(ex), ex)
     
     ### RELATIONS
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0#add-a-link
     def add_relation(self, source_workitem, destination_workitem, relation_type_name: str, \
         relation_attributes = None, \
         expand: str = 'All', bypass_rules: bool = False, \
@@ -306,42 +168,21 @@ class TfsWorkitemClient:
         assert destination_workitem, 'TfsWorkitemClient::add_relation: destination workitem can\'t be None'
         assert relation_type_name, 'TfsWorkitemClient::add_relation: relation type name can\'t be None'
 
+        source_id = None
         if isinstance(source_workitem, TfsWorkitem):
-            source_workitem = source_workitem.id
-        
-        if (not isinstance(source_workitem, int)):
-            raise TfsClientError('TfsWorkitemClient::add_relation: can\'t get id of source workitem')
-        
+            source_id = source_workitem.id
+        elif isinstance(source_workitem, int):
+            source_id = source_workitem
+
+        dest_id = None
         if isinstance(destination_workitem, int):
-            destination_workitem = self.get_single_workitem(destination_workitem)
-        
-        if (not destination_workitem) or (not isinstance(destination_workitem, TfsWorkitem)):
-            raise TfsClientError('TfsWorkitemClient::add_relation: can\'t get destination workitem')
-        
-        # request url
-        request_url = '{}/{}/{}'.format(self.client.project_url, _WORKITEM_URL, source_workitem)
-
-        # query params
-        query_params = TfsWorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
-
-        # request body
-        request_body = [dict(op='Add', path='/relations/-', \
-            value=dict(rel=relation_type_name, url=destination_workitem.url, attributes=relation_attributes))]
-        
-        # custom headers. Media Types: "application/json-patch+json"
-        custom_headers = {
-            'Content-Type' : 'application/json-patch+json'
-        }
+            dest_id = destination_workitem
+        elif isinstance(destination_workitem, int):
+            dest_id = destination_workitem
 
         try:
-            response = self.__http.patch_json(request_url, request_body, \
-                query_params=query_params, custom_headers=custom_headers)
-            
-            if not response:
-                raise TfsClientError('TfsWorkitemClient::add_relation: can\'t get response from TFS server')
-            
-            json_item = response.json()
-            return TfsWorkitem.from_json(self, json_item=json_item)
+            item = self.__wi_client.add_relation(source_id, dest_id, relation_type_name, relation_attributes, expand, bypass_rules, suppress_notifications, validate_only)
+            return TfsWorkitem.from_workitem(item)
         except ValueError as ex:
             raise TfsClientError('TfsWorkitemClient::add_relation: response is not json. Msg: {}'.format(ex), ex)
         except Exception as ex:
@@ -364,42 +205,13 @@ class TfsWorkitemClient:
         assert workitem, 'TfsWorkitemClient::remove_relation: workitem can\'t be None'
         assert relation, 'TfsWorkitemClient::remove_relation: relation can\'t be None'
 
-        # Find relation index
-        relation_idx = -1
-        for idx, rel in enumerate(workitem.relations):
-            if (rel.relation_name == relation.relation_name) and (rel.destination_id == relation.destination_id):
-                relation_idx = idx
-                break
-
-        if relation_idx < 0:
-            raise TfsClientError('TfsWorkitemClient::remove_relation: can\'t find relation index')
-
-        # request url
-        request_url = '{}/{}/{}'.format(self.client.project_url, _WORKITEM_URL, workitem.id)
-
-        # query params
-        query_params = TfsWorkitemClient.__make_query_params(expand, bypass_rules, suppress_notifications, validate_only)
-
-        # request body
-        request_body = [
-            dict(op='test', path='/rev', value=workitem.revision),
-            dict(op='remove', path='/relations/{}'.format(relation_idx))
-        ]
-
-        # custom headers. Media Types: "application/json-patch+json"
-        custom_headers = {
-            'Content-Type' : 'application/json-patch+json'
-        }
-
         try:
-            response = self.__http.patch_json(request_url, request_body, \
-                query_params=query_params, custom_headers=custom_headers)
+            wi = self.__wi_client.get_single_workitem(workitem.id)
+            dest_wi = self.__wi_client.get_single_workitem(relation.destination_id)
+            rel = WorkitemRelation.create(relation.relation_name, dest_wi)
 
-            if not response:
-                raise TfsClientError('TfsWorkitemClient::remove_relation: can\'t get response from TFS server')
-            
-            json_item = response.json()
-            return TfsWorkitem.from_json(self, json_item=json_item)
+            item = self.__wi_client.remove_relation(wi, rel, expand, bypass_rules, suppress_notifications, validate_only)
+            return TfsWorkitem.from_workitem(item)
         except ValueError as ex:
             raise TfsClientError('TfsWorkitemClient::remove_relation: response is not json. Msg: {}'.format(ex), ex)
         except Exception as ex:
@@ -421,30 +233,8 @@ class TfsWorkitemClient:
         if not isinstance(query_id, str):
             raise TfsClientError('TfsWorkitemClient::run_saved_query: query_id must be string')
         
-        # request url
-        request_url = '{}/{}/{}'.format(self.client.project_url, _QUERY_URL, query_id)
-
-        # query params
-        query_params = {
-            'api-version' : API_VERSION,
-            '$expand' : 'clauses'
-        }
-
-        try:
-            response = self.__http.get(request_url, query_params=query_params)
-            
-            if not response:
-                raise TfsClientError('TfsWorkitemClient::run_saved_query: can\'t get response from TFS Server')
-            
-            response = response.json()
-            if 'wiql' in response:
-                return self.run_wiql(str(response['wiql']))
-            else:
-                raise TfsClientError('TfsWorkitemClient::run_saved_query: response doesn\'t have wiql attribute')
-        except ValueError as ex:
-            raise TfsClientError('TfsWorkitemClient::run_saved_query: response is not json. Msg: {}'.format(ex), ex)
-        except Exception as ex:
-            raise TfsClientError('TfsWorkitemClient::run_saved_query: EXCEPTION raised. Msg: {}'.format(ex), ex)
+        res = self.__wi_client.run_saved_query(query_id)
+        return TfsWiqlResult.from_wiql_result(res)
     
     # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/wiql/query-by-wiql?view=azure-devops-rest-6.0
     def run_wiql(self, query: str, max_top: int = -1) -> TfsWiqlResult:
@@ -457,32 +247,7 @@ class TfsWorkitemClient:
         """
         assert query, 'TfsWorkitemClient::run_wiql: query can\'t be None'
 
-        # request url
-        request_url = '{}/{}'.format(self.client.project_url, _WIQL_URL)
-
-        # query params
-        query_params = {
-            'api-version' : API_VERSION
-        }
-
-        # request body
-        request_body = {
-            'query' : query
-        }
-
-        if max_top > 0:
-            request_body['$top'] = str(max_top)
-        
-        try:
-            response = self.__http.post_json(request_url, request_body, query_params=query_params)
-
-            if not response:
-                raise TfsClientError('TfsWorkitemClient::run_wiql: can\'t get response from TFS Server')
-            
-            return TfsWiqlResult.from_json(self, response.json())
-        except ValueError as ex:
-            raise TfsClientError('TfsWorkitemClient::run_wiql: response is not json. Msg: {}'.format(ex), ex)    
-        except Exception as ex:
-            raise TfsClientError('TfsWorkitemClient::run_wiql: EXCEPTION raised. Msg: {}'.format(ex), ex)
+        res = self.__wi_client.run_wiql(query, max_top)
+        return TfsWiqlResult.from_wiql_result(res)
 
     ### END WIQL REGION

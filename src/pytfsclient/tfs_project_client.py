@@ -1,16 +1,18 @@
-from .http_client import HttpClient
-from .tfs_client import API_VERSION, API_VERSION_PREVIEW, TfsBaseClient, TfsClientError
+from .tfs_client import TfsBaseClient, TfsClientError
 from .tfs_project_model import TeamMember, TfsProject, TfsTeam
 from typing import List
 
-_URL_PROJECTS = 'projects'
-_URL_TEAMS = 'teams'
-_URL_TEAM_MEMBERS = 'members'
+from .client_factory import ClientFactory
+from .services.project_client.project_client import ProjectClient
+from .models.project.tfs_project import TfsProject as TProject
+from .models.project.tfs_team import TfsTeam as TTeam
+
+### DEPRECATED IN NEXT VERSIONS ####
 
 class TfsProjectClient:
     def __init__(self, client: TfsBaseClient) -> None:
-        self.__http: HttpClient = client.http_client
         self.__client: TfsBaseClient = client
+        self.__prj_client: ProjectClient = ClientFactory.get_project_client(client.client_connection)
     
     @property
     def client(self) -> TfsBaseClient:
@@ -19,7 +21,6 @@ class TfsProjectClient:
         """
         return self.__client
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/core/projects/list?view=azure-devops-rest-6.0
     def get_projects(self, skip: int = 0) -> List[TfsProject]:
         """
         Returns current list of Tfs projects 
@@ -28,39 +29,12 @@ class TfsProjectClient:
         :return: list of TfsProject
         """
 
-        request_url = '{}/{}'.format(self.client.api_url, _URL_PROJECTS)
-        query_params = {
-            'api-version': API_VERSION,
-            '$skip' : str(skip)
-        }
-
         try:
-            projects = list()
-            
-            hasNext = True
-            while hasNext:
-                response = self.__http.get(request_url, query_params=query_params)
-
-                if not response:
-                    raise TfsClientError('TfsClient::get_team_projects: can\'t get response from TFS server')
-                
-                json_items = response.json()
-                if ('count' in json_items) and (int(json_items['count']) == 0):
-                    hasNext = False
-                    continue
-
-                if 'value' in json_items:
-                    json_items = json_items['value']
-                    projects += [TfsProject.from_json(json_item) for json_item in json_items]
-                    query_params['$skip'] = str(len(projects))
-                else:
-                    raise TfsClientError('TfsClient::get_team_projects: response doesn\'t have \'value\' attribute')
-            
-            return projects
+            projects = self.__prj_client.get_projects()
+            return [TfsProject.create(project.id, project.name, project.url) for project in projects]
         except Exception as ex:
             raise TfsClientError('TfsClient::get_team_projects: exception raised. Msg: {}'.format(ex), ex)
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/core/teams/get-teams?view=azure-devops-rest-6.0
     def get_teams(self, current_user: bool = False) -> List[TfsTeam]:
         """
         Return list of TFS teams
@@ -69,27 +43,12 @@ class TfsProjectClient:
         :return: List of TfsTeam
         """
 
-        request_url = '{}/{}'.format(self.client.api_url, _URL_TEAMS)
-        query_params = {
-            'api-version': API_VERSION_PREVIEW,
-            '$mine' : str(current_user)
-        }
-
         try:
-            response = self.__http.get(request_url, query_params=query_params)
-            if not response:
-                raise TfsClientError('TfsClient::get_teams: can\'t get response from TFS server')
-
-            json_items = response.json()
-            if 'value' in json_items:
-                json_items = json_items['value']
-                return [TfsTeam.from_json(json_item) for json_item in json_items]
-            else:
-                raise TfsClientError('TfsClient::get_teams: response doesn\'t have \'value\' attribute')
+            teams = self.__prj_client.get_all_teams(current_user=current_user)
+            return [TfsTeam.create(team.id, team.name, team.url) for team in teams]
         except Exception as ex:
             raise TfsClientError('TfsClient::get_teams: exception raised. Msg: {}'.format(ex), ex)
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/core/teams/get-teams?view=azure-devops-rest-6.0
     def get_project_teams(self, project: TfsProject, expand: bool = False, current_user: bool = False, skip: int = 0) -> List[TfsTeam]:
         """
         Get a list of teams of project.
@@ -101,41 +60,14 @@ class TfsProjectClient:
         """
         assert project, 'TfsClient::get_project_teams: project can\'t be None'
 
-        request_url = '{}/{}/{}/{}'.format(self.client.api_url, _URL_PROJECTS, project.id, _URL_TEAMS)
-        query_params = {
-            'api-version' : API_VERSION,
-            '$expandIdentity' : str(expand),
-            '$mine' : str(current_user),
-            '$skip' : str(skip)
-        }
-
         try:
-            teams = list()
+            prj = TProject.create(project.id, project.name, url=project.url)
+            teams = self.__prj_client.get_project_teams(prj, expand, current_user, skip)
 
-            hasNext = True
-            while hasNext:
-                response = self.__http.get(request_url, query_params=query_params)
-
-                if not response:
-                    raise TfsClientError('TfsClient::get_project_teams: can\'t get response from TFS server')
-
-                json_items = response.json()
-                if ('count' in json_items) and (int(json_items['count']) == 0):
-                    hasNext = False
-                    continue
-
-                if 'value' in json_items:
-                    json_items = json_items['value']
-                    teams += [TfsTeam.from_json(json_item) for json_item in json_items]
-                    query_params['$skip'] = str(len(teams))
-                else:
-                    raise TfsClientError('TfsClient::get_project_teams: response doesn\'t have \'value\' attribute')
-            
-            return teams
+            return [TfsTeam.create(team.id, team.name, team.url) for team in teams]
         except Exception as ex:
             raise TfsClientError('TfsClient::get_project_teams: exception raised. Msg: {}'.format(ex), ex)
     
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/core/teams/get-team-members-with-extended-properties?view=azure-devops-rest-6.0
     def get_project_team_members(self, project: TfsProject, team: TfsTeam) -> List[TeamMember]:
         """
         Get a list of members for a specific team and a project.
@@ -147,34 +79,12 @@ class TfsProjectClient:
         assert project, 'TfsClient::get_project_team_members: project can\'t be None'
         assert team, 'TfsClient::get_project_team_members: team can\'t be None'
 
-        request_url = '{}/{}/{}/{}/{}/{}'.format(self.client.api_url, _URL_PROJECTS, project.id, _URL_TEAMS, team.id, _URL_TEAM_MEMBERS)
-        query_params = {
-            'api-version' : API_VERSION,
-            '$skip' : '0'
-        }
-
         try:
-            members = list()
+           internal_prj = TProject.create(project.id, project.name, project.url)
+           internal_team = TTeam.create(team.id, team.name, team.url)
 
-            hasNext = True
-            while hasNext:
-                response = self.__http.get(request_url, query_params=query_params)
+           members = self.__prj_client.get_project_team_members(internal_prj, internal_team)
 
-                if not response:
-                    raise TfsClientError('TfsClient::get_project_team_members: can\'t get response from TFS server')
-
-                json_items = response.json()
-                if ('count' in json_items) and (int(json_items['count']) == 0):
-                    hasNext = False
-                    continue
-
-                if 'value' in json_items:
-                    json_items = json_items['value']
-                    members += [TeamMember.from_json(json_item['identity']) for json_item in json_items]
-                    query_params['$skip'] = str(len(members))
-                else:
-                    raise TfsClientError('TfsClient::get_project_team_members: response doesn\'t have \'value\' attribute')
-            
-            return members
+           return [TeamMember.create(member.id, member.display_name, member.unique_name, member.url) for member in members]
         except Exception as ex:
             raise TfsClientError('TfsClient::get_project_team_members: exception raised. Msg: {}'.format(ex), ex)

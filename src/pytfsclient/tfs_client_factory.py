@@ -2,10 +2,12 @@ from .tfs_client import TfsBaseClient
 from .tfs_project_client import TfsProjectClient
 from .tfs_workitem_client import TfsWorkitemClient
 
+from .services.http.http_client import HttpClient
+from .client_connection import ClientConnection
+
 class TfsClientFactory:
     """
     TfsClientFactory class with static functions helps to create TFS clients for different purposes.
-    It is main entry point to PyTfsClient library.
 
     The main function is TfsClientFactory::create() -> return TfsBaseClient
     Functions:
@@ -30,9 +32,10 @@ class TfsClientFactory:
         """
         assert server_url, 'Server url can\'t be None'
 
-        client = TfsBaseClient(server_url=server_url, project_name=project_name, verify_ssl=verify_ssl)
+        http_client = HttpClient(server_url,verify=verify_ssl)
+        client_connection = ClientConnection(http_client=http_client, project_name=project_name)
 
-        return client
+        return TfsBaseClient(client_connection)
     
     @staticmethod
     def get_project_client(client: TfsBaseClient) -> TfsProjectClient:
