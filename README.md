@@ -17,7 +17,7 @@ from pytfsclient.client_factory import ClientFactory
 ### IF authentificate with PAT
 client_connection = ClientFactory.create_pat('<personal access token>', 'https://tfs-server/tfs/', 'DefaultCollection/MyProject')
 ### OR with user name and password
-client_connection = ClientFactory.create_pat('username', 'userpassword', 'https://tfs-server/tfs/', 'DefaultCollection/MyProject')
+client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https://tfs-server/tfs/', 'DefaultCollection/MyProject')
 ```
 3. Get facade your need
 
