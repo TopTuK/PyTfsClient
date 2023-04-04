@@ -2,7 +2,6 @@ name: Run tests
 
 on:
   pull_request:
-  push:
     branches:
       - master
 
@@ -51,4 +50,7 @@ jobs:
           ENV_SERVER_URL: ${{ secrets.ENV_SERVER_URL }}
           ENV_PROJECT_NAME: ${{ secrets.ENV_PROJECT_NAME }}
         run: |
+          pytest ./test/test_client_connection.py
+          pytest ./test/test_http_client_basic.py
+          pytest ./test/test_http_client_auth.py
           pytest ./test/test_integration.py

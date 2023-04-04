@@ -30,6 +30,12 @@ class TfsTeamMember:
         URL of TFS team member
         """
         return self.__url
+    
+    def __str__(self):
+        return self.display_name
+    
+    def __repr__(self):
+        return self.display_name
 
     @classmethod
     def create(cls, id: str, display_name: str, unique_name: str, url: str = None):
