@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Dict
 from .tfs_update_relations_result import UpdateRelationsResult
 from .tfs_workitem_relation import WorkitemRelation
+from .tfs_workitem_changes import WorkitemChange
 
 _IgnoreFields = [
     'System.Id',
@@ -180,6 +181,13 @@ class Workitem:
             return UpdateFieldsResult.UPDATE_SUCCESS
         except:
             return UpdateFieldsResult.UPDATE_EXCEPTION
+    
+    def get_changes(self, skip: int = 0, top: int = -1) -> List[WorkitemChange]:
+        '''
+        Get history changes of workitem
+        '''
+
+        return self.__client.get_workitem_changes(self.id, skip, top)
 
     ### RELATION REGION ###
 
@@ -211,7 +219,7 @@ class Workitem:
         
         wi = cls()
 
-        wi.__client = client
+        wi.__client = client # WorkitemClient
         wi.__raw = json_item
 
         wi.__id = json_item['id']

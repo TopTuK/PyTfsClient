@@ -90,7 +90,7 @@ class WorkitemClient(BaseClient):
 
     def get_workitem_changes(self, item_id: Union[int, Workitem], skip: int = 0, top: int = -1) -> List[WorkitemChange]:
         '''
-        Get Workitem history changes
+        Get Workitem history changes (updates)
         '''
         
         assert item_id, 'WorkitemClient::get_workitem_history: item_id can\'t be None'
