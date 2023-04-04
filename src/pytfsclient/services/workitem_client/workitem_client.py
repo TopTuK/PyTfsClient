@@ -1,9 +1,10 @@
-from typing import List, Dict
+from typing import List, Dict, Union
 from requests import HTTPError
 from ...models.client_error import ClientError
 from ...models.workitems.tfs_wiql_result import WiqlResult
 from ...models.workitems.tfs_workitem import Workitem
 from ...models.workitems.tfs_workitem_relation import WorkitemRelation
+from ...models.workitems.tfs_workitem_changes import WorkitemChange
 from ..base_client import BaseClient
 from ...client_connection import ClientConnection
 from ..helpers.batch_iterable import batch
@@ -86,6 +87,55 @@ class WorkitemClient(BaseClient):
         assert item_id, 'WorkitemClient::get_single_workitem: item_id can\'t be None'
 
         return self.get_workitems(item_ids=item_id, item_fields=item_fields)[0]
+
+    def get_workitem_changes(self, item_id: Union[int, Workitem], skip: int = 0, top: int = -1) -> List[WorkitemChange]:
+        '''
+        Get Workitem history changes
+        '''
+        
+        assert item_id, 'WorkitemClient::get_workitem_history: item_id can\'t be None'
+        
+        if isinstance(item_id, Workitem):
+            item_id = item_id.id
+        if not isinstance(item_id, int):
+            raise ClientError('WorkitemClient::get_workitem_history: item_id should be instance of int or Workitem')
+        
+        request_url = f'{self.client_connection.api_url}{self._WORKITEM_URL}/{item_id}/updates'
+        
+        # Http Query Params
+        query_params = {
+            'api-version': self.api_version,
+            '$skip': str(skip),
+        }
+
+        if top > 0:
+            query_params['$top'] = str(top)
+
+        try:
+            changes: List[WorkitemChange] = list()
+
+            hasNext = True
+            while hasNext:
+                http_response = self.http_client.get(request_url, query_params)
+
+                if not http_response:
+                    raise ClientError('WorkitemClient::get_workitem_history: can\'t get response from TFS server')
+                
+                json_items = http_response.json()
+                if ('count' in json_items) and (int(json_items['count']) == 0):
+                    hasNext = False
+                    continue
+
+                if 'value' in json_items:
+                    query_params['$skip'] = str(json_items['count'])
+                    
+                    changes += [WorkitemChange.from_json(json_changes) for json_changes in json_items['value']]
+                else:
+                    raise ClientError('WorkitemClient::get_workitem_history: response doesn\'t have \'value\' attribute')
+            
+            return changes
+        except Exception as ex:
+            raise ClientError(f'WorkitemClient::get_workitem_history: exception raised. Msg: {ex}', ex)
 
     # return dictonary with standart query params
     @staticmethod

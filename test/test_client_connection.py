@@ -2,7 +2,7 @@ import pytest
 from pytfsclient.client_factory import ClientFactory
 
 ### Command
-# pytest .\test\test_client_connection2.py
+# pytest .\test\test_client_connection.py
 
 def test_create_client_connection():
     # Arrange

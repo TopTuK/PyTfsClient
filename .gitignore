@@ -2,6 +2,9 @@
 __setup.py
 main*
 
+# pytest env
+pytest.ini
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -4,6 +4,7 @@ from .tfs_workitem_client import TfsWorkitemClient
 
 from .services.http.http_client import HttpClient
 from .client_connection import ClientConnection
+from .models.obsolete import obsolete
 
 class TfsClientFactory:
     """
@@ -15,6 +16,7 @@ class TfsClientFactory:
     - get_workitem_client() -> return TfsWorkitemClient facade for managing workitems and relations
     """
 
+    @obsolete
     @staticmethod
     def create(server_url: str, project_name: str='DefaultCollection', verify_ssl: bool=False) -> TfsBaseClient:
         """
@@ -37,6 +39,7 @@ class TfsClientFactory:
 
         return TfsBaseClient(client_connection)
     
+    @obsolete
     @staticmethod
     def get_project_client(client: TfsBaseClient) -> TfsProjectClient:
         """
@@ -49,6 +52,7 @@ class TfsClientFactory:
 
         return TfsProjectClient(client=client)
 
+    @obsolete
     @staticmethod
     def get_workitem_client(client: TfsBaseClient) -> TfsWorkitemClient:
         """
