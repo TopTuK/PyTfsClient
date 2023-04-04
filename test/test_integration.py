@@ -145,12 +145,55 @@ def test_update_workitem_fields(workitem_client: WorkitemClient):
     assert wi.title == wi_compare.title, 'Can\'t save changes'
     assert wi.description == wi_compare['System.Description']
 
-def test_get_worktime_changes(workitem_client: WorkitemClient):
+def test_get_workitem_changes(workitem_client: WorkitemClient):
     # Arrange
     workitem_id = 6 # [BRQ] Python requirement edited
 
     # Act
     changes = workitem_client.get_workitem_changes(workitem_id)
+
+    # Asset
+    assert changes, 'Workitem changes are None'
+    assert len(changes) > 0, 'Workitem changes are empty'
+
+    for change in changes:
+        assert change.id, 'Workitem change is None'
+        assert change.revision, 'Workitem revision is None'
+
+        if change.field_changes:
+            assert len(change.field_changes) > 0, ''
+
+            for fld_change in change.field_changes:
+                assert fld_change.name, 'Field change name is None'
+                assert fld_change.new_value, f'Field {fld_change.name} change does not have new value'
+
+        if change.relation_changes:
+            rel_changes = change.relation_changes
+
+            assert rel_changes.added or rel_changes.removed or rel_changes.updated, 'Workitem doesn\'t have relation changes'
+
+            if rel_changes.added:
+                for rel in rel_changes.added:
+                    assert rel.relation_name, 'Added relation doesn\'t have relation name'
+                    assert rel.destination_id, 'Added relation doesn\'t have destination id'
+
+            if rel_changes.removed:
+                for rel in rel_changes.removed:
+                    assert rel.relation_name, 'Removed relation doesn\'t have relation name'
+                    assert rel.destination_id, 'Removed relation doesn\'t have destination id'
+
+            if rel_changes.updated:
+                for rel in rel_changes.updated:
+                    assert rel.relation_name, 'Updated relation doesn\'t have relation name'
+                    assert rel.destination_id, 'Updated relation doesn\'t have destination id'
+
+def test_get_workitem_changes2(workitem_client: WorkitemClient):
+    # Arrange
+    workitem_id = 6 # [BRQ] Python requirement edited
+
+    # Act
+    wi = workitem_client.get_single_workitem(workitem_id)
+    changes = wi.get_changes()
 
     # Asset
     assert changes, 'Workitem changes are None'

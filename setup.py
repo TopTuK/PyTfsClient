@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 # https://docs.python.org/3/distutils/setupscript.html
 setup(
     name='PyTfsClient',
-    version='1.3.5',
+    version='1.4.0',
     license='MIT',
     description='Python Microsoft Team Foundation Server Library is a  client that can work with Microsoft TFS workitems',
     url='https://github.com/TopTuK/PyTfsClient',
@@ -23,7 +23,7 @@ setup(
         'requests_ntlm',
     ],
     classifiers=[
-        'Development Status :: 4 - Beta',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
+        'Development Status :: 5 - Production/Stable',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
         'Intended Audience :: Developers',      # Define that your audience are developers
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: MIT License',   # Again, pick a license
