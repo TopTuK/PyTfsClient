@@ -1,41 +1,56 @@
-class TfsTeam:
-    """
-    TFS Team model class
-    """
+from ..client_error import ClientError
+
+class Team:
+    '''
+    Team model class contains infromation about TFS/Azure team such as id, name and url
+    '''
 
     @property
     def id(self) -> str:
-        """
-        ID of TFS Team
-        """
+        '''
+        Returns:
+            ID of TFS/Azure Team
+        '''
         return self.__id
 
     @property
     def name(self) -> str:
-        """
-        Name of TFS Team
-        """
+        '''
+        Returns:
+            Name of TFS/Azure Team
+        '''
         return self.__name
 
     @property
     def url(self) -> str:
-        """
-        URL of TFS Team
-        """
+        '''
+        Returns:
+            URL of TFS/Azure Team
+        '''
         return self.__url
 
     @classmethod
     def create(cls, id: str, name: str, url: str = None):
-        """
-        Creates TFSTeam instance.
+        '''
+        Classmethod creates instance of Team class.
 
-        :param: id (str): ID of TFS team. Can\'t be None.
-        :param: name (str): name of TFS team. Can\'t be None.
-        :param: url (str): url for TFS team
-        :return: TFSTeam instance.
-        """
-        assert id, 'Id can\'t be None'
-        assert name, 'Name can\'t be None'
+        Args:
+            id (str): ID of TFS team. Can\'t be None.
+            name (str): name of TFS team. Can\'t be None.
+            url (str): url for TFS team
+
+        Returns:
+            Instance of Team class
+
+        Raises:
+            ClientError: if id or name is None
+        '''
+
+        if not id:
+            raise ClientError('Id can\'t be None')
+        
+        if not name:
+            raise ClientError('Name can\'t be None')
 
         team = cls()
 
@@ -47,13 +62,23 @@ class TfsTeam:
 
     @classmethod
     def from_json(cls, json_item):
-        """
-        Creates TfsTeam object from given json object
-        """
+        '''
+        Classmethod creates instance of Team class from given json object
+
+        Args:
+            json_item (object): JSON object with 'id', 'name' and 'url' attributes.
+
+        Returns:
+            Instance of Team class
+        '''
+
         team = cls()
 
-        team.__id = json_item['id']
-        team.__name = json_item['name']
-        team.__url = json_item['url']
+        try:
+            team.__id = json_item['id']
+            team.__name = json_item['name']
+            team.__url = json_item['url']
+        except Exception as ex:
+            raise ClientError(ex)
 
         return team

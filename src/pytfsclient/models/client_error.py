@@ -1,5 +1,5 @@
 class ClientError(Exception):
     '''
-    TClientError exception raised in API calls
+    ClientError contains information about raised exception
     '''
     pass

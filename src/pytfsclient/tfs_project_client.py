@@ -4,8 +4,8 @@ from typing import List
 
 from .client_factory import ClientFactory
 from .services.project_client.project_client import ProjectClient
-from .models.project.tfs_project import TfsProject as TProject
-from .models.project.tfs_team import TfsTeam as TTeam
+from .models.project.tfs_project import Project as TProject
+from .models.project.tfs_team import Team as TTeam
 
 ### DEPRECATED IN NEXT VERSIONS ####
 

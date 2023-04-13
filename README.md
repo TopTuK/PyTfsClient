@@ -1,3 +1,6 @@
+# TESTS
+[![Run tests](https://github.com/TopTuK/PyTfsClient/actions/workflows/tests.yaml/badge.svg?branch=master)](https://github.com/TopTuK/PyTfsClient/actions/workflows/tests.yaml)
+
 # PyTfsClient library (TFS API Python client)
 
 Microsoft Team Foundation Server Python Library is a Microsoft TFS API Python client that can work with Microsoft TFS.
@@ -45,3 +48,6 @@ client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https
     for wi in workitems:
         print('Item: id={}, Title={}'.format(wi.id, wi.title))
     ```
+
+# Coding style
+https://google.github.io/styleguide/pyguide.html
