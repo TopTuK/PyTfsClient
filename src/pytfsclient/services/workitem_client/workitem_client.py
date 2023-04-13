@@ -10,9 +10,9 @@ from ...client_connection import ClientConnection
 from ..helpers.batch_iterable import batch
 
 class WorkitemClient(BaseClient):
-    """
-    TFS Workitem Client facade for managing workitems and relations
-    """
+    '''
+    Workitem Client facade for managing workitems and relations.
+    '''
 
     _WORKITEM_URL = 'wit/workitems'
     _WIQL_URL = 'wit/wiql'
@@ -23,9 +23,9 @@ class WorkitemClient(BaseClient):
         super().__init__(client_connection)
 
     def _get_items(self, request_url: str, query_params, under_project: bool = False) -> List[Workitem]:
-        """
+        '''
         Return list of Workitem or raise an exception
-        """
+        '''
         
         url = f'{self.client_connection.project_url}{request_url}' if under_project else f'{self.client_connection.api_url}{request_url}'
         
@@ -48,13 +48,26 @@ class WorkitemClient(BaseClient):
         except Exception as ex:
             raise ClientError(f'WorkitemClient::get_items: EXCEPTION raised. Msg: {ex}', ex)
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/list?view=azure-devops-rest-6.0
     def get_workitems(self, item_ids, item_fields: List[str] = None, expand: str = 'All', batch_size: int = 50) -> List[Workitem]:
-        """
-        Return list of Workitems for given list of item ids.
-        """
-        
-        assert item_ids, 'WorkitemClient::get_workitems: item ids can\'t be None'
+        '''
+        Returns list of Workitems for given list of item ids.
+        Docs: https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/list?view=azure-devops-rest-6.0
+
+        Args:
+            item_ids (List[int] | List[str] | int | str): list of ids of workitems to get
+            item_fields (List[str]): list of requested fields of workitems
+            expand (str): The expand parameters for work item attributes. Possible options are { None, Relations, Fields, Links, All }. Default: All
+            batch_size (int): batch size
+
+        Returns:
+            List or workitems: List[Workitem]
+
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not item_ids:
+            raise ClientError('WorkitemClient::get_workitems: item ids can\'t be None')
 
         if isinstance(item_ids, int):
             item_ids = [item_ids]
@@ -80,20 +93,42 @@ class WorkitemClient(BaseClient):
         return workitems
 
     def get_single_workitem(self, item_id, item_fields: List[str] = None) -> Workitem:
-        """
-        Get TFS workitem
-        """
+        '''
+        Get single TFS/Azure workitem. Calls get_workitems().
         
-        assert item_id, 'WorkitemClient::get_single_workitem: item_id can\'t be None'
+        Args:
+            item_id (int| str): workitem id
+            item_fields (List[str]): list of requested fields of workitems. Default: all fields
 
-        return self.get_workitems(item_ids=item_id, item_fields=item_fields)[0]
+        Returns:
+            Workitem instance
+        
+        Raises:
+            ClientError with information about exception
+        '''
+        
+        if not item_id:
+            raise ClientError('WorkitemClient::get_single_workitem: item_id can\'t be None')
+
+        items = self.get_workitems(item_ids=item_id, item_fields=item_fields)
+        return items[0] if items else None
 
     def get_workitem_changes(self, item_id: Union[int, Workitem], skip: int = 0, top: int = -1) -> List[WorkitemChange]:
         '''
-        Get Workitem history changes (updates)
+        Get Workitem history changes (updates).
+
+        Args:
+            item_id (int, Workitem): workitem instance
+
+        Returns:
+            List of changes of workitem: List[WorkitemChange]
+
+        Raises:
+            ClientError with information about exception
         '''
         
-        assert item_id, 'WorkitemClient::get_workitem_history: item_id can\'t be None'
+        if not item_id:
+            raise ClientError('WorkitemClient::get_workitem_history: item_id can\'t be None')
         
         if isinstance(item_id, Workitem):
             item_id = item_id.id
@@ -140,9 +175,9 @@ class WorkitemClient(BaseClient):
     # return dictonary with standart query params
     @staticmethod
     def _make_query_params(expand: str, bypass_rules: bool, suppress_notifications: bool, validate_only: bool) -> dict:
-        """
+        '''
         Return dictonary with standart query params
-        """
+        '''
 
         return {
             'api-version' : BaseClient.api_version,
@@ -152,16 +187,32 @@ class WorkitemClient(BaseClient):
             'validateOnly' : str(validate_only)
         }
     
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/create?view=azure-devops-rest-6.0
     def create_workitem(self, type_name: str, \
         item_fields: Dict[str, str] = None, item_relations: List[WorkitemRelation] = None, \
         expand: str = 'All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> Workitem:
-        """
-        Creates workitem of given type, properties and relations
-        """
+        '''
+        Creates workitem of given type, properties and relations.
+        Docs: https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/create?view=azure-devops-rest-6.0
 
-        assert type_name, 'WorkitemClient::create_workitem: item type name can\'t be None'
+        Args:
+            type_name (str): The work item type of the work item to create. Ex: Task, Change request
+            item_fields (Dict[str, str]): created workitems fields values
+            item_relations (List[WorkitemRelation]): workitem relations
+            expand (str): The expand parameters for work item attributes. Possible options are { None, Relations, Fields, Links, All }.
+            bypass_rules (bool): Do not enforce the work item type rules on this update
+            suppress_notifications (bool): Do not fire any notifications for this change
+            validate_only (bool): Indicate if you only want to validate the changes without saving the work item
+
+        Returns:    
+            Workitem instance
+
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not type_name:
+            raise ClientError('WorkitemClient::create_workitem: item type name can\'t be None')
 
         # request url
         request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/${type_name}'
@@ -196,12 +247,25 @@ class WorkitemClient(BaseClient):
         except Exception as ex:
             raise ClientError(f'WorkitemClient::create_workitem: EXCEPTION raised. Msg: {ex}', ex)
 
-    def copy_workitem(self, source_item, item_fields: List[str] = None, item_ignore_fileds: List[str] = None) -> Workitem:
-        """
-        Creates copy of given workitem
-        """
+    def copy_workitem(self, source_item, item_fields: List[str] = None, \
+                      item_ignore_fileds: List[str] = None) -> Workitem:
+        '''
+        Creates copy of given workitem.
 
-        assert source_item, 'WorkitemClient::copy_workitem: source_item can\'t be None'
+        Args:
+            source_item (int | Workitem): source workitem
+            item_fields (List[str]): fields of source workitem to copy. Default: None (all fields).
+            item_ignore_fileds (List[str]): fields of source workitem to ignore. Default: None
+
+        Returns:
+            Copied workitem instance
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not source_item:
+            raise ClientError('WorkitemClient::copy_workitem: source_item can\'t be None')
 
         if isinstance(source_item, int):
             source_item = self.get_single_workitem(source_item)
@@ -263,16 +327,33 @@ class WorkitemClient(BaseClient):
         except Exception as ex:
             raise ClientError(f'WorkitemClient::copy_workitem: EXCEPTION raised. Msg: {ex}', ex)
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0
     def update_workitem_fields(self, workitem, item_fields: Dict[str, str], \
         expand: str='All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> Workitem:
-        """
-        Updates fields values for given workitem
-        """
+        '''
+        Updates fields values for given workitem.
+        Docs: https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0
 
-        assert workitem, 'WorkitemClient::update_workitem_fields: workitem can\'t be None'
-        assert item_fields, 'WorkitemClient::update_workitem_fields: item_fields can\'t be None'
+        Args:
+            workitem (int, Workitem): workitem to update
+            item_fields: (Dict[str, str]) dictonary with values of updated fields
+            expand: The expand parameters for work item attributes. Possible options are { None, Relations, Fields, Links, All }.
+            bypass_rules: Do not enforce the work item type rules on this update
+            suppress_notifications: Do not fire any notifications for this change
+            validate_only: Indicate if you only want to validate the changes without saving the work item
+
+        Returns:
+            Workitem instance with updated fields
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not workitem:
+            raise ClientError('WorkitemClient::update_workitem_fields: workitem can\'t be None')
+        
+        if not item_fields:
+            raise ClientError ('WorkitemClient::update_workitem_fields: item_fields can\'t be None')
         
         if isinstance(workitem, int):
             workitem = self.get_single_workitem(workitem)
@@ -308,18 +389,39 @@ class WorkitemClient(BaseClient):
 
     ### REGION MANAGING RELATIONS ###
 
-    # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0#add-a-link
     def add_relation(self, source_workitem, destination_workitem, relation_type_name: str, \
         relation_attributes = None, \
         expand: str = 'All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> Workitem:
-        """
-        Add relation link of given type for given workitem to another workitem
-        """
+        '''
+        Adds relation link of given type for given workitem to another workitem.
+        Docs: https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-6.0#add-a-link
 
-        assert source_workitem, 'WorkitemClient::add_relation: source workitem can\'t be None'
-        assert destination_workitem, 'WorkitemClient::add_relation: destination workitem can\'t be None'
-        assert relation_type_name, 'WorkitemClient::add_relation: relation type name can\'t be None'
+        Args:
+            source_workitem (int, Workitem): source workitem
+            destination_workitem (int, Workitem): destination workitem
+            relation_type_name: relation type name (see RelationMap for default relations)
+            relation_attributes: relation attributes
+            expand: The expand parameters for work item attributes. Possible options are { None, Relations, Fields, Links, All }.
+            bypass_rules: Do not enforce the work item type rules on this update
+            suppress_notifications: Do not fire any notifications for this change
+            validate_only: Indicate if you only want to validate the changes without saving the work item
+        
+        Returns:
+            Workitem with added relation
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not source_workitem:
+            raise ClientError('WorkitemClient::add_relation: source workitem can\'t be None')
+        
+        if not destination_workitem:
+            raise ClientError('WorkitemClient::add_relation: destination workitem can\'t be None')
+        
+        if not relation_type_name:
+            raise ClientError('WorkitemClient::add_relation: relation type name can\'t be None')
 
         if isinstance(source_workitem, Workitem):
             source_workitem = source_workitem.id
@@ -365,12 +467,16 @@ class WorkitemClient(BaseClient):
     def remove_relation(self, workitem: Workitem, relation: WorkitemRelation, \
         expand='All', bypass_rules=False, \
         suppress_notifications=False, validate_only=False) -> Workitem:
-        """
-        Remove relation from given workitem. jFYI: Tfs api can remove relation only for given index
-        """
+        '''
+        Removes relation from given workitem.
+        TFS/Azure api can remove relation only for given index
+        '''
 
-        assert workitem, 'WorkitemClient::remove_relation: workitem can\'t be None'
-        assert relation, 'WorkitemClient::remove_relation: relation can\'t be None'
+        if not workitem:
+            raise ClientError('WorkitemClient::remove_relation: workitem can\'t be None')
+        
+        if not relation:
+            raise ClientError('WorkitemClient::remove_relation: relation can\'t be None')
 
         # Find relation index
         relation_idx = -1
@@ -419,11 +525,21 @@ class WorkitemClient(BaseClient):
 
     # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/queries/get?view=azure-devops-rest-6.0
     def run_saved_query(self, query_id: str) -> WiqlResult:
-        """
+        '''
         Retrieves an individual query and its children
-        """
 
-        assert query_id, 'WorkitemClient::run_saved_query: query id can\'t be None'
+        Args:
+            query_id (str): query id (GUID)
+        
+        Returns:
+            Query result: WiqlResult
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not query_id:
+            raise ClientError('WorkitemClient::run_saved_query: query id can\'t be None')
 
         if not isinstance(query_id, str):
             raise ClientError('WorkitemClient::run_saved_query: query_id must be string')
@@ -455,11 +571,21 @@ class WorkitemClient(BaseClient):
 
     # https://docs.microsoft.com/en-us/rest/api/azure/devops/wit/wiql/query-by-wiql?view=azure-devops-rest-6.0
     def run_wiql(self, query: str, max_top: int = -1) -> WiqlResult:
-        """
-        Gets the results of the query given its WIQL
-        """
+        '''
+        Runs WIQL query.
 
-        assert query, 'WorkitemClient::run_wiql: query can\'t be None'
+        Args:
+            query (str): WIQL query
+        
+        Returns:
+            Query result: WiqlResult
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not query:
+            raise ClientError('WorkitemClient::run_wiql: query can\'t be None')
 
         # request url
         request_url = f'{self.client_connection.project_url}/{self._WIQL_URL}'

@@ -15,7 +15,7 @@ from pytfsclient.services.workitem_client.workitem_client import WorkitemClient
 from pytfsclient.models.workitems.tfs_workitem_relation import WorkitemRelation, RelationTypes, RelationMap
 from pytfsclient.models.workitems.tfs_workitem import UpdateFieldsResult
 from pytfsclient.models.workitems.tfs_workitem_changes import WorkitemChange, FieldChange, WorkitemRelationChanges
-from pytfsclient.models.project.tfs_team_member import TfsTeamMember
+from pytfsclient.models.project.tfs_team_member import TeamMember
 
 ### ^^^ ADDED EXTRA PATHS BELOW ^^^
 ### https://pytest-docs-ru.readthedocs.io/ru/latest/fixture.html

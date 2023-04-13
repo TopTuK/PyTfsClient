@@ -1,11 +1,33 @@
 from .services.http.http_client import HttpClient
+from .models.client_error import ClientError
 
 class ClientConnection:
-    """
-    """
+    '''
+    ClientConnection class contains information about connecting to the TFS/Azure service.
+    '''
     
     # Constructor
     def __init__(self, http_client: HttpClient, project_name: str='DefaultCollection') -> None:
+        '''
+        ClientConnection constructor. Creates instance of ClientConnection class
+
+        Args:
+            http_client: instance of HttpClient
+            project_name: name of Tfs/Azure project. Default is 'DefaultCollection
+
+        Returns:
+            Instance of ClientConnection
+
+        Raises:
+            ConnectionError: if http_client or project_name is None
+        '''
+
+        if not http_client:
+            raise ClientError('http_client is None')
+
+        if not project_name:
+            raise ClientError('project_name is None')
+
         server_url = http_client.base_url
 
         if not server_url.endswith('/'):
@@ -14,6 +36,8 @@ class ClientConnection:
         self.__server_url = server_url
         self.__http_client = http_client
 
+        # Closure function to get collection and project from project name
+        # Remove part after / in project_name, like DefaultCollection/MyProject => DefaultCollection
         def get_collection_and_project():
             splitted_project = project_name.split('/')
             collection = splitted_project[0]
@@ -27,7 +51,6 @@ class ClientConnection:
 
             return collection, project
         
-        # Remove part after / in project_name, like DefaultCollection/MyProject => DefaultCollection
         collection, project = get_collection_and_project()
 
         # Assign Collection and Project
@@ -38,52 +61,52 @@ class ClientConnection:
 
     @property
     def server_url(self) -> str:
-        """
-        :return: TFS server URL (str)
-        """
+        '''
+        Returns TFS/Azure server URL
+        '''
         return self.__server_url
     
     @property
     def collection(self) -> str:
-        """
-        :return: current TFS collection
-        """
+        '''
+        Returns TFS/Azure collection name.
+        if you set project name as DefaultCollection/MyProject this property return DefaultCollection.
+        '''
         return self.__collection
 
     @property
     def project_name(self) -> str:
-        """
-        :return: current TFS project name
-        """
+        '''
+        Returns TFS/Azure project name.
+        if you set project name as DefaultCollection/MyProject this property return MyProject.
+        '''
         return self.__project_name
     
     @project_name.setter
     def project_name(self, name: str) -> None:
-        """
-        :setter: sets TFS server project name and project api url
-        """
+        '''
+        Sets project name for current connection.
+        '''
         self.__project_name = name
     
     @property
     def http_client(self) -> HttpClient:
-        """
-        :return: configured HTTP client
-        """
+        '''
+        Returns instance of HttpClient with defined authorization
+        '''
         return self.__http_client
-    
-    # Remove part after / in project-name, like DefaultCollection/MyProject => DefaultCollection
-    # API responce only in Project, without subproject    
+     
     @property
     def api_url(self) -> str:
-        """
-        :return: TFS server api URL ending with '/'
-        """
+        '''
+        Returns TFS/Azure API part of URL (collection without project). Ends with '/'.
+        '''
         return f'{self.__collection}/_apis/'
 
     # API response only for Collection/Project
     @property
     def project_url(self) -> str:
-        """
-        :return: TFS server project api URL ending with '/'
-        """
+        '''
+        Returns TFS/Azure project API part of URL. Ends with '/'.
+        '''
         return f'{self.__collection}/{self.__project_name}/_apis/' if self.__project_name else self.api_url
