@@ -115,7 +115,7 @@ def test_create_child_tasks(workitem_client: WorkitemClient):
     assert wi.relations, 'Workitem relations are None'
     assert len(relations) == len(wi.relations), 'Workitem relations count is not same!'
 
-    # Check onlu one relation
+    # Check only one relation
     assert wi.relations[0].destination_id == relations[0].destination_id
 
 def test_update_workitem_fields(workitem_client: WorkitemClient):

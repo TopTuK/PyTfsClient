@@ -25,7 +25,7 @@ class MentionClient:
     _TFS_HISTORY_FIELD = 'System.History'
     
     @staticmethod
-    def send_mention(self, workitem: Workitem, to_user: TeamMember, \
+    def send_mention(workitem: Workitem, to_user: TeamMember, \
                     message: str, from_user: TeamMember = None) -> MentionResult:
         '''
         Sends mention to user. Writes mention to History of workitem
@@ -59,7 +59,7 @@ class MentionClient:
             mention += f'<br>CC: <a href=\"#\" data-vss-mention=\"version:2.0,{from_user.Id}\">@{from_user.DisplayName}</a>'
 
         try:
-            workitem[self._TFS_HISTORY_FIELD] = mention
+            workitem[MentionClient._TFS_HISTORY_FIELD] = mention
             update_result = workitem.update_fields()
 
             return MentionResult.MENTION_SUCCESS \
