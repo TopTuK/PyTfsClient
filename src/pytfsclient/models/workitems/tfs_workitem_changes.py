@@ -12,7 +12,7 @@ class FieldChange:
     def name(self) -> str:
         '''
         Returns:
-            Field name
+            Changed field name
         '''
 
         return self.__name
