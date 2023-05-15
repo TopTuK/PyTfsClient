@@ -102,10 +102,10 @@ class TeamMember:
         member = cls()
 
         try:
-            member.__id = json_item['id']
-            member.__display_name = json_item['displayName']
-            member.__unique_name = json_item['uniqueName']
-            member.__url = json_item['url']
+            member.__id = json_item['id'] if 'id' in json_item else None
+            member.__display_name = json_item['displayName'] if 'displayName' in json_item else 'Unknown user'
+            member.__unique_name = json_item['uniqueName'] if 'uniqueName' in json_item else member.__display_name
+            member.__url = json_item['url'] if 'url' in json_item else None
         except Exception as ex:
             raise ClientError(ex)
 
