@@ -32,7 +32,7 @@ class WiqlResult:
             List of workitems.
         '''
 
-        return self.__client.get_workitems(self.item_ids)
+        return self.__client.get_workitems(self.item_ids) if not self.is_empty else []
     
     @classmethod
     def from_json(cls, tfs_client, json_response):
