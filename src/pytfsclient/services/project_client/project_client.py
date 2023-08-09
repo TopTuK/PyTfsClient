@@ -1,6 +1,7 @@
 from ...models.client_error import ClientError
 from ...models.project.tfs_project import Project
 from ...models.project.tfs_team import Team
+from ...models.project.tfs_identity import Identity
 from ...models.project.tfs_team_member import TeamMember
 from ...services.base_client import BaseClient
 from ...client_connection import ClientConnection
@@ -66,6 +67,82 @@ class ProjectClient(BaseClient):
         except Exception as ex:
             raise ClientError(f'ProjectClient::get_projects: exception raised. Msg: {ex}', ex)
 
+    def get_project(self, project_id: str, capabilities: bool = False, history: bool = False) -> Project:
+        '''
+        Returns TFS/Azure project instance.
+        Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/core/projects/get?view=azure-devops-rest-6.0
+
+        Args:
+            project_id (str): project id. Can't be None.
+            capabilities (bool): Include capabilities (such as source control) in the team project result (default: false).
+            history (bool): Search within renamed projects (that had such name in the past).
+
+        Returns:
+            Project instance.
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not project_id:
+            raise ClientError('ProjectClient::get_project: project id can\'t be None')
+
+        request_url = f'{self.client_connection.api_url}{self._URL_PROJECTS}/{project_id}'
+        query_params = {
+            'api-version': self.api_version,
+            'includeCapabilities' : str(capabilities),
+            'includeHistory' : str(history)
+        }
+
+        try:
+            response = self.http_client.get(request_url, query_params=query_params)
+
+            if not response:
+                raise ClientError('ProjectClient::get_project: can\'t get response from TFS server')
+            
+            json_item = response.json()
+            return Project.from_json(json_item)
+        except Exception as ex:
+            raise ClientError(f'ProjectClient::get_project: exception raised. Msg: {ex}', ex)
+        
+    def get_team(self, project_id: str, team_id: str, expand: bool = False) -> Team:
+        '''
+        Returns TFS/Azure team instance.
+        Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/core/teams/get?view=azure-devops-rest-6.0&tabs=HTTP
+
+        Args:
+            project_id (str): project id. Can't be None.
+            team_id (str): team id. Can't be None.
+            expand (bool): A value indicating whether or not to expand Identity information in the result WebApiTeam object.
+
+        Returns:
+            Team instance.
+        
+        Raises:
+            ClientError with information about exception
+        '''
+
+        if not project_id:
+            raise ClientError('ProjectClient::get_project: project id can\'t be None')
+        if not team_id:
+            raise ClientError('ProjectClient::get_project: team id can\'t be None')
+        
+        request_url = f'{self.client_connection.api_url}{self._URL_PROJECTS}/{project_id}/{self._URL_TEAMS}/{team_id}'
+        query_params = {
+            'api-version': self.api_version,
+            '$expandIdentity' : str(expand)
+        }
+        try:
+            response = self.http_client.get(request_url, query_params=query_params)
+
+            if not response:
+                raise ClientError('ProjectClient::get_project: can\'t get response from TFS server')
+            
+            json_item = response.json()
+            return Team.from_json(json_item)
+        except Exception as ex:
+            raise ClientError(f'ProjectClient::get_project: exception raised. Msg: {ex}', ex)
+
     def get_all_teams(self, current_user: bool = False) -> List[Team]:
         '''
         Returns list of TFS/Azure teams.
@@ -101,6 +178,88 @@ class ProjectClient(BaseClient):
                 raise ClientError('ProjectClient::get_all_teams: response doesn\'t have \'value\' attribute')
         except Exception as ex:
             raise ClientError(f'ProjectClient::get_all_teams: exception raised. Msg: {ex}', ex)
+    
+    def get_project_groups(self, project: Project) -> List[Identity]:
+        '''
+        Get a list of identities for the project
+        Non-public api: {project_id}/_api/_identity/ReadScopedApplicationGroupsJson?__v=5
+
+        Args:
+            project (Project): project instance. Can't be None
+        
+        Returns:
+            List of project identities: List[Identity]
+        
+        Raises:
+            ClientError if identities is None or bad request
+        '''
+
+        if not project:
+            raise ClientError('ProjectClient::get_project_groups: project can\'t be None')
+
+        request_url = f'{self.client_connection.collection}/{project.id}/_api/_identity/ReadScopedApplicationGroupsJson'
+        query_params = {
+            '__v' : 5,
+        }
+
+        try:
+            response = self.http_client.get(request_url, query_params=query_params)
+
+            if not response:
+                raise ClientError('ProjectClient::get_project_groups: can\'t get response from TFS server')
+            
+            json_items = response.json()
+            if 'identities' in json_items:
+                return [Identity.from_json(json_item) for json_item in json_items['identities']]
+            else:
+                return []
+        except Exception as ex:
+            raise ClientError(f'ProjectClient::get_project_groups: exception raised. Msg: {ex}', ex)
+    
+    def get_project_group_members(self, project: Project, identity: Identity) -> List[Identity]:
+        '''
+        Get a list of project group members
+        Non-public api: {project_id}/_api/_identity/ReadGroupMembers?__v=5&scope={group.foundation_id}&readMembers=true
+
+        Args:
+            project (Project): project instance. Can't be None
+            identity (Identity): identity of project. Can'be None and should be group
+        
+        Returns:
+            List of project identities: List[Identity]
+        
+        Raises:
+            ClientError if identities is None or bad request
+        '''
+
+        if not project:
+            raise ClientError('ProjectClient::get_project_group_members: project can\'t be None')
+        
+        if not identity:
+            raise ClientError('ProjectClient::get_project_group_members: identity can\'t be None')
+        if not identity.is_group:
+            raise ClientError('ProjectClient::get_project_group_members: identity should be group')
+
+        request_url = f'{self.client_connection.collection}/{project.id}/_api/_identity/ReadGroupMembers'
+        query_params = {
+            '__v' : 5,
+            'scope' : identity.foundation_id,
+            'readMembers' : 'true',
+        }
+
+        try:
+            response = self.http_client.get(request_url, query_params=query_params)
+
+            if not response:
+                raise ClientError('ProjectClient::get_project_group_members: can\'t get response from TFS server')
+            
+            json_items = response.json()
+            if 'identities' in json_items:
+                return [Identity.from_json(json_item) for json_item in json_items['identities']]
+            else:
+                return []
+        except Exception as ex:
+            raise ClientError(f'ProjectClient::get_project_group_members: exception raised. Msg: {ex}', ex)
 
     def get_project_teams(self, project: Project, expand: bool = False, \
                           current_user: bool = False, skip: int = 0) -> List[Team]:
