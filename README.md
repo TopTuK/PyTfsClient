@@ -51,3 +51,7 @@ client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https
 
 # Coding style
 https://google.github.io/styleguide/pyguide.html
+
+# Additional API
+- It can send mentions to another user (see MentionClient::send_mention)
+- It can get project identities (groups, teams, etc.) without Graph API.
