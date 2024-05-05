@@ -261,3 +261,40 @@ def test_project_client(project_client: ProjectClient):
     assert len(members) > 0, 'Members list count is less than 1'
 
 ### END OF MANAGING PROJECTS TESTS
+
+### MANAGING BOARDS TESTS
+
+def test_project_client_boards(project_client: ProjectClient):
+    # Arrange
+    projects = None
+    teams = None
+
+    boards = None
+    board = None
+
+    # Act
+    projects = project_client.get_projects()
+    if projects and len(projects) > 0:
+        project = projects[0]
+
+        teams = project_client.get_project_teams(project)
+        if teams and len(teams) > 0:
+            team = teams[0]
+
+            boards = project_client.get_project_team_boards(project, team)
+            if boards and len(boards) > 0:
+                board = project_client.get_project_team_board(project, team, board_id=boards[0].id)
+    # Assert
+    assert projects, 'Can\'t get projects -> None'
+    assert len(projects) > 0, 'Projects list count is less than 1'
+
+    assert teams, 'Can\'t get teams -> None'
+    assert len(teams) > 0, 'Teams list count is less than 1'
+
+    assert boards, 'Can\'t get boards -> None'
+    assert len(boards) > 0, 'Boards count is 0! Can\'t get board for project team'
+
+    assert board, 'Can\'t get board for project team'
+    assert board.id, 'Can\'t get board id'
+
+### END OF MANAGING BOARDS TESTS

@@ -3,6 +3,7 @@ from ...models.project.tfs_project import Project
 from ...models.project.tfs_team import Team
 from ...models.project.tfs_identity import Identity
 from ...models.project.tfs_team_member import TeamMember
+from ...models.board.tfs_board import Board
 from ...services.base_client import BaseClient
 from ...client_connection import ClientConnection
 from typing import List
@@ -15,6 +16,7 @@ class ProjectClient(BaseClient):
     _URL_PROJECTS = 'projects'
     _URL_TEAMS = 'teams'
     _URL_TEAM_MEMBERS = 'members'
+    _URL_BOARDS = 'boards'
 
     # Constructor
     def __init__(self, client_connection: ClientConnection) -> None:
@@ -372,3 +374,98 @@ class ProjectClient(BaseClient):
             return members
         except Exception as ex:
             raise ClientError(f'ProjectClient::get_project_team_members: exception raised. Msg: {ex}', ex)
+
+    def get_project_team_board(self, project: Project, team: Team, board_id: str) -> Board:
+        '''
+        Get the board for a specific team and a project.
+        Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/work/boards/get?view=azure-devops-rest-6.0
+
+        Args:
+            project (Project): project instance of the team project the team belongs to.
+            team (Team): team instance
+            board_id (str): ID of a board
+
+        Returns:
+            Board class instance
+        
+        Raises:
+            ClientError if project, team or board_id is None
+            ClientError if bad request
+        '''
+
+        if not project:
+            raise ClientError('ProjectClient::get_project_team_board: project can\'t be None')
+        
+        if not team:
+            raise ClientError('ProjectClient::get_project_team_board: team can\'t be None')
+        
+        if not board_id:
+            raise ClientError('ProjectClient::get_project_team_board: board_id can\'t be None')
+        
+        request_url = f'{self.client_connection.collection}/{project.id}/{team.id}/_apis/work/{self._URL_BOARDS}/{board_id}'
+        query_params = {
+            'api-version' : self.api_version,
+        }
+
+        try:
+            response = self.http_client.get(request_url, query_params=query_params)
+
+            if not response:
+                raise ClientError('ProjectClient::get_project_team_board: can\'t get response from TFS server')
+            
+            json_item = response.json()
+            return Board.from_json(json_item)
+
+        except Exception as ex:
+            raise ClientError(f'ProjectClient::get_project_team_board: exception raised. Msg: {ex}', ex)
+
+    def get_project_team_boards(self, project: Project, team: Team) -> List[Board]:
+        '''
+        Get a list of boards for a specific team and a project.
+        Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/work/boards/list?view=azure-devops-rest-6.0
+
+        Args:
+            project (Project): project instance of the team project the team belongs to.
+            team (Team): team instance
+
+        Returns:
+            List of boards: List[Board]
+        
+        Raises:
+            ClientError if project or team is None
+            ClientError if bad request
+        '''
+
+        if not project:
+            raise ClientError('ProjectClient::get_project_team_boards: project can\'t be None')
+        
+        if not team:
+            raise ClientError('ProjectClient::get_project_team_boards: team can\'t be None')
+        
+        request_url = f'{self.client_connection.collection}/{project.id}/{team.id}/_apis/work/{self._URL_BOARDS}'
+        query_params = {
+            'api-version' : self.api_version,
+        }
+
+        try:
+            response = self.http_client.get(request_url, query_params=query_params)
+
+            if not response:
+                raise ClientError('ProjectClient::get_project_team_boards: can\'t get response from TFS server')
+            
+            json_items = response.json()
+            if 'value' in json_items:
+                boards: List[Board] = []
+                for json_item in json_items['value']:
+                    board = self.get_project_team_board(project, team, json_item['id'])
+
+                    if not board:
+                        raise ClientError('ProjectClient::get_project_team_boards: ')
+                    else:
+                        boards.append(board)
+
+                return boards
+            else:
+                raise ClientError('ProjectClient::get_project_team_boards: response doesn\'t have \'value\' attribute')
+        except Exception as ex:
+            raise ClientError(f'ProjectClient::get_project_team_boards: exception raised. Msg: {ex}', ex)

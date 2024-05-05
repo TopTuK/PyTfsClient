@@ -240,8 +240,7 @@ class WorkitemChange:
                 change.__relation_changes = WorkitemRelationChanges._from_json(json_item['relations'])
             else:
                 change.__relation_changes = None
-        
+
+            return change
         except Exception as ex:
             raise ClientError(ex)
-
-        return change
