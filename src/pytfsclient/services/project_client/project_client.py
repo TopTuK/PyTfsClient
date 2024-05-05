@@ -375,7 +375,7 @@ class ProjectClient(BaseClient):
         except Exception as ex:
             raise ClientError(f'ProjectClient::get_project_team_members: exception raised. Msg: {ex}', ex)
 
-    def get_project_team_board(self, project: Project, team: Team, board_id: str) -> List[Board]:
+    def get_project_team_board(self, project: Project, team: Team, board_id: str) -> Board:
         '''
         Get the board for a specific team and a project.
         Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/work/boards/get?view=azure-devops-rest-6.0
@@ -462,7 +462,7 @@ class ProjectClient(BaseClient):
                     if not board:
                         raise ClientError('ProjectClient::get_project_team_boards: ')
                     else:
-                        boards += board
+                        boards.append(board)
 
                 return boards
             else:

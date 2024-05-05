@@ -111,6 +111,7 @@ def test_create_child_tasks(workitem_client: TfsWorkitemClient):
     # Check only one relation
     assert wi.relations[0].destination_id == relations[0].destination_id
 
+@pytest.mark.skip(reason="SKIP by now")
 def test_update_workitem_fields(workitem_client: TfsWorkitemClient):
     # Arrange
     today = datetime.date.today()

@@ -18,7 +18,7 @@ class BoardColumnType(Enum):
 
 
 BOARD_COLUMN_TYPE_MAP = {
-    'Incoming': BoardColumnType.INCOMING,
+    'incoming': BoardColumnType.INCOMING,
     'inProgress': BoardColumnType.ACTIVE,
     'outgoing': BoardColumnType.OUTGOING
 }
