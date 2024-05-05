@@ -104,10 +104,9 @@ class WorkitemRelation:
 
             relation.__destination_id = get_id()
         
+            return relation
         except Exception as ex:
             raise ClientError(ex)
-
-        return relation
     
     @classmethod
     def create(cls, relation_name: str, workitem):

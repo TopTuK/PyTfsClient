@@ -304,8 +304,7 @@ class Workitem:
             else:
                 wi.__relations = []
                 
+            return wi
         except Exception as ex:
             raise ClientError(ex)
-
-        return wi
     
