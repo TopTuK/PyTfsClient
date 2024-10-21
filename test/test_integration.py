@@ -85,6 +85,32 @@ def test_create_workitem(workitem_client: WorkitemClient):
     assert wi, 'Can\'t create Workitem!'
     assert wi.title == wi_title, 'Workitem title differs!'
 
+def test_create_workitem_another_project(workitem_client: WorkitemClient):
+    # Arrange
+    today = datetime.date.today()
+    wi_type_name = 'User Story'
+    wi_title = f'[BRQ] New user story in another project - {today}'
+    wi_description = f'This BRQ was created by test at {today}'
+
+    wi_project = f'AnotherProject'
+    wi_area_path = f'AnotherProject'
+    wi_iteration_path = f'AnotherProject'
+
+    wi_fields = {
+        'System.Title': wi_title,
+        'System.Description': wi_description,
+        'System.AreaPath': wi_area_path,
+        'System.IterationPath': wi_iteration_path
+    }
+
+    # Act
+    wi = workitem_client.create_workitem(type_name=wi_type_name, item_fields=wi_fields, project=wi_project)
+    #wi = workitem_client.create_workitem(wi_type_name, wi_fields)
+
+    # Assert
+    assert wi, 'Can\'t create Workitem!'
+    assert wi.title == wi_title, 'Workitem title differs!'
+
 def test_create_child_tasks(workitem_client: WorkitemClient):
     # Arrange
     today = datetime.date.today()

@@ -189,6 +189,7 @@ class WorkitemClient(BaseClient):
     
     def create_workitem(self, type_name: str, \
         item_fields: Dict[str, str] = None, item_relations: List[WorkitemRelation] = None, \
+        project: str = None, \
         expand: str = 'All', bypass_rules: bool = False, \
         suppress_notifications: bool = False, validate_only: bool = False) -> Workitem:
         '''
@@ -215,7 +216,10 @@ class WorkitemClient(BaseClient):
             raise ClientError('WorkitemClient::create_workitem: item type name can\'t be None')
 
         # request url
-        request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/${type_name}'
+        request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/${type_name}' \
+            if not project \
+            else f'{self.client_connection.collection}/{project}/_apis/{self._WORKITEM_URL}/${type_name}'
+        #request_url = f'{self.client_connection.project_url}/{self._WORKITEM_URL}/${type_name}'
 
         # query params
         query_params = WorkitemClient._make_query_params(expand, bypass_rules, suppress_notifications, validate_only)

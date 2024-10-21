@@ -36,7 +36,7 @@ client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https
     
 4. Manage TFS items
 
-    4.1 Managing workitems
+    4.1 Get workitems properties
     ```python
     wi = workitem_client.get_single_workitem(100500)
     print('Item: Id={}, Title={}, State={}'.format(wi.id, wi.title, wi['System.State']))
@@ -47,6 +47,38 @@ client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https
     workitems = workitem_client.get_workitems([1, 2, 3])
     for wi in workitems:
         print('Item: id={}, Title={}'.format(wi.id, wi.title))
+    ```
+
+    4.2 Create workitem in current project
+    ```python
+    wi_type_name = 'Requirement'
+    wi_title = f'New requirement'
+    wi_description = f'This BRQ was created by PyTfsClient'
+
+    wi_fields = {
+        'System.Title': wi_title,
+        'System.Description': wi_description,
+    }
+
+    # Create workitem
+    wi = workitem_client.create_workitem(wi_type_name, wi_fields)
+    ```
+
+    4.3 Create workitem in another project
+    ```python
+    wi_project = f'AnotherProject'
+
+    wi_type_name = 'User Story'
+    wi_title = f'New user story'
+    wi_description = f'This User Story was created by PyTfsClient'
+
+    wi_fields = {
+        'System.Title': wi_title,
+        'System.Description': wi_description,
+    }
+
+    # Create workitem
+    wi = workitem_client.create_workitem(type_name=wi_type_name, item_fields=wi_fields, project=wi_project)
     ```
 
 # Coding style
