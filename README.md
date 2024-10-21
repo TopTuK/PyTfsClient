@@ -44,7 +44,7 @@ client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https
     wi.update_fields()
     print('Item custom field: {}'.format(wi['Custom.Field']))
 
-    workitems = client.get_workitems([1, 2, 3])
+    workitems = workitem_client.get_workitems([1, 2, 3])
     for wi in workitems:
         print('Item: id={}, Title={}'.format(wi.id, wi.title))
     ```
