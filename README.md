@@ -44,10 +44,14 @@ client_connection = ClientFactory.create_ntlm('username', 'userpassword', 'https
     wi.update_fields()
     print('Item custom field: {}'.format(wi['Custom.Field']))
 
-    workitems = client.get_workitems([1, 2, 3])
+    workitems = workitem_client.get_workitems([1, 2, 3])
     for wi in workitems:
         print('Item: id={}, Title={}'.format(wi.id, wi.title))
     ```
 
 # Coding style
 https://google.github.io/styleguide/pyguide.html
+
+# Additional API
+- It can send mentions to another user (see MentionClient::send_mention)
+- It can get project identities (groups, teams, etc.) without Graph API.
